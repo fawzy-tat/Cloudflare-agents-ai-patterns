@@ -316,7 +316,13 @@ interface PatternCardProps {
 
 const colorStyles: Record<
   ColorTheme,
-  { card: string; flow: string; alert: string; icon: string }
+  {
+    card: string;
+    flow: string;
+    alert: string;
+    icon: string;
+    tag: string;
+  }
 > = {
   blue: {
     card: "border-blue-500/20 bg-blue-50/10 dark:bg-blue-900/10",
@@ -324,6 +330,7 @@ const colorStyles: Record<
     alert:
       "bg-blue-100/50 dark:bg-blue-900/30 border-blue-200/60 dark:border-blue-800/60 text-blue-900 dark:text-blue-100",
     icon: "text-blue-600 dark:text-blue-400",
+    tag: "bg-blue-500/10 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-700",
   },
   orange: {
     card: "border-orange-500/20 bg-orange-50/10 dark:bg-orange-900/10",
@@ -331,6 +338,7 @@ const colorStyles: Record<
     alert:
       "bg-orange-100/50 dark:bg-orange-900/30 border-orange-200/60 dark:border-orange-800/60 text-orange-900 dark:text-orange-100",
     icon: "text-orange-600 dark:text-orange-400",
+    tag: "bg-orange-500/10 text-orange-700 border-orange-300 dark:bg-orange-900/40 dark:text-orange-200 dark:border-orange-700",
   },
   purple: {
     card: "border-purple-500/20 bg-purple-50/10 dark:bg-purple-900/10",
@@ -338,6 +346,7 @@ const colorStyles: Record<
     alert:
       "bg-purple-100/50 dark:bg-purple-900/30 border-purple-200/60 dark:border-purple-800/60 text-purple-900 dark:text-purple-100",
     icon: "text-purple-600 dark:text-purple-400",
+    tag: "bg-purple-500/10 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-200 dark:border-purple-700",
   },
   emerald: {
     card: "border-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-900/10",
@@ -345,6 +354,7 @@ const colorStyles: Record<
     alert:
       "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/60 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-100",
     icon: "text-emerald-600 dark:text-emerald-400",
+    tag: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-700",
   },
 };
 
@@ -400,7 +410,10 @@ function PatternCard({
               <Badge
                 key={tag}
                 variant="outline"
-                className="text-[10px] px-2 py-0 h-5 bg-background/50 backdrop-blur-sm border-primary/10 text-muted-foreground"
+                className={cn(
+                  "text-[10px] px-2 py-0 h-5 rounded-full border",
+                  styles.tag
+                )}
               >
                 {tag}
               </Badge>

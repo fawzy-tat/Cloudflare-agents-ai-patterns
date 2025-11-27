@@ -82,7 +82,9 @@ export default function HttpStreamingPage() {
             </Button>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-orange-500">↻</span>
+                <span className="text-orange-500">
+                  <RefreshCw className="w-5 h-5" />
+                </span>
                 HTTP Streaming
               </h1>
               <p className="text-muted-foreground text-xs">

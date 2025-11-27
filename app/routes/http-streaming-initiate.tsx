@@ -78,7 +78,9 @@ export default function HttpStreamingInitiatePage() {
             </Button>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-purple-500">⚡</span>
+                <span className="text-purple-500">
+                  <Zap className="w-5 h-5 fill-current" />
+                </span>
                 Direct RPC Method
               </h1>
               <p className="text-muted-foreground text-xs">

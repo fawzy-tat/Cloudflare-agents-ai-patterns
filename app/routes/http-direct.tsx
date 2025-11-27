@@ -77,7 +77,9 @@ export default function HttpDirectPage() {
             </Button>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-emerald-500">⚡</span>
+                <span className="text-emerald-500">
+                  <Zap className="w-5 h-5 fill-current" />
+                </span>
                 HTTP Direct to Agent
               </h1>
               <p className="text-muted-foreground text-xs">

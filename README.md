@@ -1,5 +1,7 @@
 # Building AI Agents on Cloudflare: A Practical Guide
 
+![Agent Integration Patterns](./public/images/menu.png)
+
 The first time I got a Vercel AI Agent to stream a response through a Cloudflare Durable Object, I sat there watching the text flow in, chunk by chunk, and thought: _this is exactly how AI agents should be built_.
 
 I'd been experimenting with various agent frameworks for months. Most of them felt like you were fighting the infrastructure as much as building the actual agent. But when I discovered that Cloudflare's Agent SDK could serve as the stateful container while Vercel's AI SDK handled the cognitive layer—that clicked. Two tools, each excellent at their job, working together without getting in each other's way.
@@ -33,19 +35,11 @@ This isn't just a starter template. It's a collection of working examples that s
 | **UI Components**      | shadcn/ui + Tailwind CSS | Clean, accessible component library                  |
 | **Language**           | TypeScript               | End-to-end type safety                               |
 
-### Dependencies (Key Packages)
+### Key Dependencies
 
-```json
-{
-  "agents": "^0.2.23",
-  "ai": "^5.0.102",
-  "@ai-sdk/openai": "^2.0.73",
-  "@ai-sdk/react": "^1.2.12",
-  "hono": "4.8.2",
-  "react-router": "7.6.3",
-  "wrangler": "4.50.0"
-}
-```
+[`agents`](https://npmjs.com/package/agents) | [`ai`](https://npmjs.com/package/ai) | [`@ai-sdk/openai`](https://npmjs.com/package/@ai-sdk/openai) | [`@ai-sdk/react`](https://npmjs.com/package/@ai-sdk/react) | [`hono`](https://npmjs.com/package/hono) | [`react-router`](https://npmjs.com/package/react-router) | [`zod`](https://npmjs.com/package/zod) | [`wrangler`](https://npmjs.com/package/wrangler)
+
+> See [`package.json`](./package.json) for exact versions.
 
 ---
 
@@ -133,205 +127,108 @@ This project demonstrates four distinct ways to connect your frontend to AI agen
 
 ### Pattern 1: WebSocket Real-time (useAgent)
 
-**Route**: `direct-agent.tsx` → `/agents/:agent/:id`  
+**Frontend**: [`app/routes/direct-agent.tsx`](./app/routes/direct-agent.tsx)  
+**Backend**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onMessage()`  
 **Hook**: `useAgent()` from `agents/react`  
-**Handler**: `onMessage()` in the Agent class
+**Endpoint**: `/agents/:agent/:id`
+
+The frontend establishes a WebSocket connection and sends messages:
 
 ```typescript
-// Frontend
-import { useAgent } from "agents/react";
-
-const connection = useAgent({
-  agent: "research-agent",
-  name: sessionId,
-  onMessage: (msg) => {
-    const data = JSON.parse(msg.data);
-    if (data.type === "chunk") {
-      setResponse((prev) => prev + data.content);
-    }
-  },
-});
-
-// Send a message
 connection.send(JSON.stringify({ prompt: "Plan a trip to Tokyo" }));
 ```
 
-```typescript
-// Agent (onMessage handler)
-async onMessage(connection: Connection, message: string) {
-  const { prompt } = JSON.parse(message);
-  const vercelAgent = this.createVercelAgent();
-  const result = vercelAgent.stream({ prompt });
+The agent streams chunks back through the same connection:
 
-  for await (const chunk of result.textStream) {
-    connection.send(JSON.stringify({ type: "chunk", content: chunk }));
-  }
-  connection.send(JSON.stringify({ type: "complete" }));
+```typescript
+for await (const chunk of result.textStream) {
+  connection.send(JSON.stringify({ type: "chunk", content: chunk }));
 }
 ```
 
-**When to use**:
-
-- Chat interfaces requiring real-time updates
-- Collaborative features where multiple clients need state sync
-- Applications that need automatic reconnection handling
-
-**Trade-offs**:
-
-- More complex connection management
-- Requires handling WebSocket lifecycle events
-- Best for stateful, interactive applications
+**When to use**: Chat interfaces, collaborative features, real-time state sync  
+**Trade-offs**: More complex connection management, requires lifecycle handling
 
 ---
 
 ### Pattern 2: HTTP Streaming via API Route (useCompletion → onRequest)
 
-**Route**: `http-streaming.tsx` → `/api/research`  
-**Hook**: `useCompletion()` from `@ai-sdk/react`  
-**Handler**: `onRequest()` in the Agent class
+**Frontend**: [`app/routes/http-streaming.tsx`](./app/routes/http-streaming.tsx)  
+**Backend**: [`workers/app.ts`](./workers/app.ts) → `/api/research` route  
+**Agent Handler**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onRequest()`  
+**Hook**: `useCompletion()` from `@ai-sdk/react`
+
+Frontend setup (critical: `streamProtocol: "text"`):
 
 ```typescript
-// Frontend
-import { useCompletion } from "@ai-sdk/react";
-
-const { completion, complete, isLoading } = useCompletion({
+const { completion, complete } = useCompletion({
   api: "/api/research",
-  streamProtocol: "text", // ← Critical! Vercel Agent outputs plain text
-});
-
-await complete(prompt, {
-  body: { prompt, userId: sessionId },
+  streamProtocol: "text", // ← Required for Vercel Agent plain text output
 });
 ```
+
+The Hono route retrieves the agent and forwards the request:
 
 ```typescript
-// Hono API Route
-app.post("/api/research", async (c) => {
-  const { prompt, userId } = await c.req.json();
-  const agent = await getAgentByName<Env, ResearchAgent>(
-    c.env.ResearchAgent,
-    userId
-  );
-
-  // Forward to agent's onRequest handler
-  const agentRequest = new Request(c.req.url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-
-  return agent.fetch(agentRequest);
-});
+const agent = await getAgentByName<Env, ResearchAgent>(
+  c.env.ResearchAgent,
+  userId
+);
+return agent.fetch(agentRequest);
 ```
 
-```typescript
-// Agent (onRequest handler)
-async onRequest(request: Request) {
-  const { prompt } = await request.json<{ prompt: string }>();
-  const vercelAgent = this.createVercelAgent();
-  const result = vercelAgent.stream({ prompt });
-  return result.toTextStreamResponse();
-}
-```
-
-**When to use**:
-
-- When you need middleware (auth, rate limiting, validation)
-- RESTful architectures
-- When you want full control over the request/response cycle
-
-**Trade-offs**:
-
-- Unidirectional (client → server → client)
-- No built-in state synchronization
-- More familiar pattern for REST developers
+**When to use**: REST architectures, when you need middleware (auth, rate limiting)  
+**Trade-offs**: Unidirectional, no built-in state sync
 
 ---
 
 ### Pattern 3: Direct RPC Method Invocation (useCompletion → custom method)
 
-**Route**: `http-streaming-initiate.tsx` → `/api/research/initiate`  
-**Hook**: `useCompletion()` from `@ai-sdk/react`  
-**Handler**: Custom `initiateAgent()` method
+**Frontend**: [`app/routes/http-streaming-initiate.tsx`](./app/routes/http-streaming-initiate.tsx)  
+**Backend**: [`workers/app.ts`](./workers/app.ts) → `/api/research/initiate` route  
+**Agent Handler**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `initiateAgent()`  
+**Hook**: `useCompletion()` from `@ai-sdk/react`
+
+Instead of `agent.fetch()`, call a custom method directly:
 
 ```typescript
-// Hono API Route
-app.post("/api/research/initiate", async (c) => {
-  const { prompt, userId } = await c.req.json();
-  const agent = await getAgentByName<Env, ResearchAgent>(
-    c.env.ResearchAgent,
-    userId
-  );
-
-  // Call custom RPC method directly
-  return (agent as any).initiateAgent(prompt);
-});
+return (agent as any).initiateAgent(prompt);
 ```
 
-```typescript
-// Agent (custom RPC method)
-initiateAgent(prompt: string): Response {
-  const vercelAgent = this.createVercelAgent();
-  const result = vercelAgent.stream({ prompt });
+The custom method must return a `Response` (serializable across DO boundary):
 
-  // MUST return Response (serializable) - not StreamTextResult
-  return result.toTextStreamResponse();
+```typescript
+initiateAgent(prompt: string): Response {
+  const result = vercelAgent.stream({ prompt });
+  return result.toTextStreamResponse(); // ← Must return Response, not StreamTextResult
 }
 ```
 
-**When to use**:
-
-- When you need multiple distinct entry points on one agent
-- Cleaner method signatures without Request object parsing
-- When different methods need different behaviors
-
-**Trade-offs**:
-
-- Must return serializable types (Response, not StreamTextResult)
-- Slightly more boilerplate than onRequest
-- TypeScript requires casting for custom methods
+**When to use**: Multiple entry points per agent, cleaner method signatures  
+**Trade-offs**: Must return serializable types, TypeScript requires casting
 
 ---
 
 ### Pattern 4: Auto-Routed Direct Access (useCompletion → /agents/\*)
 
-**Route**: `http-direct.tsx` → `/agents/:agent/:id`  
-**Hook**: `useCompletion()` from `@ai-sdk/react`  
-**Handler**: `onRequest()` in the Agent class (via routeAgentRequest)
+**Frontend**: [`app/routes/http-direct.tsx`](./app/routes/http-direct.tsx)  
+**Backend**: Auto-handled by `routeAgentRequest()` in [`workers/app.ts`](./workers/app.ts)  
+**Agent Handler**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onRequest()`  
+**Hook**: `useCompletion()` from `@ai-sdk/react`
+
+Frontend points directly to the agent URL pattern:
 
 ```typescript
-// Frontend
 const { completion, complete } = useCompletion({
-  api: `/agents/${agentName}/${sessionId}`, // Direct to agent!
+  api: `/agents/${agentName}/${sessionId}`,
   streamProtocol: "text",
 });
-
-await complete(prompt, {
-  body: { prompt },
-});
 ```
 
-```typescript
-// Hono (no custom route needed - routeAgentRequest handles it)
-app.all("/agents/*", async (c) => {
-  return (
-    (await routeAgentRequest(c.req.raw, c.env)) ||
-    c.json({ error: "Agent not found" }, 404)
-  );
-});
-```
+No custom Hono route needed—`routeAgentRequest()` handles everything.
 
-**When to use**:
-
-- Simplest possible setup
-- Prototyping and MVPs
-- When you don't need middleware processing
-
-**Trade-offs**:
-
-- Less control over request processing
-- No middleware layer for auth/validation
-- Direct exposure of agent endpoints
+**When to use**: Simplest setup, prototyping, MVPs  
+**Trade-offs**: Less middleware control, direct endpoint exposure
 
 ---
 
@@ -373,14 +270,9 @@ cf-hono-rr7-agents/
 ### Installation
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd cf-hono-rr7-agents
-
-# Install dependencies
 pnpm install
-
-# Generate Cloudflare types
 pnpm run cf-typegen
 ```
 
@@ -392,26 +284,11 @@ pnpm run cf-typegen
 OPENAI_API_KEY=sk-your-api-key-here
 ```
 
-2. The `wrangler.jsonc` already has the Durable Object bindings configured:
-
-```jsonc
-{
-  "durable_objects": {
-    "bindings": [
-      { "name": "ResearchAgent", "class_name": "ResearchAgent" },
-      { "name": "SupportAgent", "class_name": "SupportAgent" }
-    ]
-  },
-  "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["ResearchAgent", "SupportAgent"] }
-  ]
-}
-```
+2. Durable Object bindings are already configured in [`wrangler.jsonc`](./wrangler.jsonc).
 
 ### Development
 
 ```bash
-# Start the dev server
 pnpm run dev
 ```
 
@@ -420,109 +297,38 @@ Visit `http://localhost:5173` to see the pattern overview and try each integrati
 ### Deployment
 
 ```bash
-# Build and deploy to Cloudflare
 pnpm run deploy
-```
-
-Don't forget to set your secrets in production:
-
-```bash
 wrangler secret put OPENAI_API_KEY
 ```
 
 ---
 
-## Defining Your Own Agent
-
-Here's how to create a new agent from scratch:
+## Creating Your Own Agent
 
 ### 1. Create the Agent Class
 
-```typescript
-// workers/agents/MyAgent.ts
-import { Agent, type Connection } from "agents";
-import { Experimental_Agent as VercelAgent, tool, stepCountIs } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { z } from "zod";
+See [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) for a complete example.
 
-export class MyAgent extends Agent<Env> {
-  private createVercelAgent() {
-    return new VercelAgent({
-      model: openai("gpt-4o"),
-      system: "You are a helpful assistant that...",
-      tools: {
-        myTool: tool({
-          description: "Does something useful",
-          inputSchema: z.object({
-            input: z.string().describe("The input parameter"),
-          }),
-          execute: async ({ input }) => {
-            // Your tool logic here
-            return { result: `Processed: ${input}` };
-          },
-        }),
-      },
-      stopWhen: stepCountIs(5), // Limit reasoning steps
-    });
-  }
+Key parts:
 
-  // Handle HTTP requests
-  async onRequest(request: Request) {
-    const { prompt } = await request.json<{ prompt: string }>();
-    const vercelAgent = this.createVercelAgent();
-    const result = vercelAgent.stream({ prompt });
-    return result.toTextStreamResponse();
-  }
-
-  // Handle WebSocket messages
-  async onMessage(connection: Connection, message: string) {
-    const { prompt } = JSON.parse(message);
-    const vercelAgent = this.createVercelAgent();
-    const result = vercelAgent.stream({ prompt });
-
-    for await (const chunk of result.textStream) {
-      connection.send(JSON.stringify({ type: "chunk", content: chunk }));
-    }
-    connection.send(JSON.stringify({ type: "complete" }));
-  }
-}
-```
+- Extend `Agent<Env>` from `agents`
+- Create a Vercel Agent with `new VercelAgent({ model, system, tools, stopWhen })`
+- Implement `onRequest()` for HTTP, `onMessage()` for WebSocket
+- Define tools using `tool()` from `ai` with Zod schemas (see [`workers/tools/index.ts`](./workers/tools/index.ts))
 
 ### 2. Export and Configure
 
+In [`workers/app.ts`](./workers/app.ts):
+
 ```typescript
-// workers/app.ts
-import { MyAgent } from "./agents/MyAgent";
-export { MyAgent };
+export { MyAgent } from "./agents/MyAgent";
 ```
 
-```jsonc
-// wrangler.jsonc
-{
-  "durable_objects": {
-    "bindings": [{ "name": "MyAgent", "class_name": "MyAgent" }]
-  },
-  "migrations": [{ "tag": "v2", "new_sqlite_classes": ["MyAgent"] }]
-}
-```
+In [`wrangler.jsonc`](./wrangler.jsonc), add bindings and migrations for your new agent class.
 
 ### 3. Add API Routes (Optional)
 
-```typescript
-// workers/app.ts
-app.post("/api/my-agent", async (c) => {
-  const { prompt, userId } = await c.req.json();
-  const agent = await getAgentByName<Env, MyAgent>(c.env.MyAgent, userId);
-
-  const request = new Request(c.req.url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-
-  return agent.fetch(request);
-});
-```
+See the existing routes in [`workers/app.ts`](./workers/app.ts) for patterns on retrieving agents with `getAgentByName()` and forwarding requests.
 
 ---
 
@@ -530,71 +336,27 @@ app.post("/api/my-agent", async (c) => {
 
 ### "Failed to parse stream string" Error
 
-**Problem**: `useCompletion` expects the AI SDK's data stream protocol by default.
+**Problem**: `useCompletion` expects AI SDK's data stream protocol by default.
 
-**Solution**: Add `streamProtocol: "text"` to your hook:
-
-```typescript
-const { completion, complete } = useCompletion({
-  api: "/api/research",
-  streamProtocol: "text", // ← This fixes it
-});
-```
+**Solution**: Set `streamProtocol: "text"` in your hook options.
 
 ### DataCloneError: Could not serialize object
 
 **Problem**: Returning `StreamTextResult` from a Durable Object RPC method.
 
-**Solution**: Call `.toTextStreamResponse()` inside the DO and return the `Response`:
-
-```typescript
-// Wrong
-initiateAgent(prompt: string) {
-  const result = vercelAgent.stream({ prompt });
-  return result; // ← Can't serialize this
-}
-
-// Correct
-initiateAgent(prompt: string): Response {
-  const result = vercelAgent.stream({ prompt });
-  return result.toTextStreamResponse(); // ← Returns serializable Response
-}
-```
+**Solution**: Call `.toTextStreamResponse()` inside the DO method and return the `Response` object.
 
 ### WebSocket Connection Fails with 404
 
-**Problem**: `useAgent` connects to `/agents/:agent/:name` by default, but your routes might not match.
+**Problem**: `useAgent` connects to `/agents/:agent/:name` but your routes don't match.
 
-**Solution**: Ensure your Hono route for `routeAgentRequest` comes BEFORE React Router's catch-all:
-
-```typescript
-// Must be before the "*" catch-all route
-app.all("/agents/*", async (c) => {
-  return (
-    (await routeAgentRequest(c.req.raw, c.env)) ||
-    c.json({ error: "Agent not found" }, 404)
-  );
-});
-
-// This catch-all should be last
-app.get("*", (c) => {
-  /* React Router handler */
-});
-```
+**Solution**: Ensure `app.all("/agents/*", ...)` with `routeAgentRequest()` comes BEFORE React Router's catch-all route.
 
 ### Agent Name Mismatch
 
-**Problem**: `useAgent({ agent: "ResearchAgent" })` doesn't match what the SDK expects.
+**Problem**: `useAgent({ agent: "ResearchAgent" })` doesn't connect.
 
-**Solution**: The agent name is kebab-cased and derived from the class name. `ResearchAgent` becomes `research-agent`:
-
-```typescript
-// Class name: ResearchAgent
-useAgent({
-  agent: "research-agent", // ← kebab-case
-  name: sessionId,
-});
-```
+**Solution**: Agent names are kebab-cased. Use `"research-agent"` not `"ResearchAgent"`.
 
 ---
 

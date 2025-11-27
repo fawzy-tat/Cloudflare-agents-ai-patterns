@@ -118,7 +118,7 @@ For highlighting code within text descriptions.
 
 ## Icons
 
-We use [Lucide React](https://lucide.dev/icons/) icons.
+We use [Lucide React](https://lucide.dev/icons/) icons. Emojis should **not** be used in the UI; always prefer icons for visual cues.
 
 - **Common Icons**:
   - `ArrowLeft`: Back navigation

@@ -13,7 +13,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
-import { ArrowLeft, Send, Sparkles, Terminal, Info } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Terminal, Info, Zap } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 export function meta({}: Route.MetaArgs) {
@@ -110,7 +110,9 @@ export default function DirectAgentPage() {
             </Button>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-blue-500">⚡</span>
+                <span className="text-blue-500">
+                  <Zap className="w-5 h-5 fill-current" />
+                </span>
                 WebSocket Real-time
               </h1>
               <p className="text-muted-foreground text-xs">
