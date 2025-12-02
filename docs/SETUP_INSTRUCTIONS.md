@@ -13,13 +13,15 @@ This document provides a comprehensive technical deep-dive into building AI agen
 5. [Building the Agent Class](#building-the-agent-class)
 6. [Defining Tools](#defining-tools)
 7. [API Routes with Hono](#api-routes-with-hono)
-8. [Pattern 1: WebSocket Real-time (useAgent)](#pattern-1-websocket-real-time-useagent)
-9. [Pattern 2: HTTP Streaming via API Route](#pattern-2-http-streaming-via-api-route)
-10. [Pattern 3: Direct RPC Method Invocation](#pattern-3-direct-rpc-method-invocation)
-11. [Pattern 4: Auto-Routed Direct Access](#pattern-4-auto-routed-direct-access)
-12. [Streaming Protocols & Serialization](#streaming-protocols--serialization)
-13. [Common Errors & Solutions](#common-errors--solutions)
-14. [Best Practices](#best-practices)
+8. [🔌 WebSocket Patterns](#-websocket-patterns)
+   - [Pattern 1: WebSocket Streaming](#pattern-1-websocket-streaming)
+9. [🌐 HTTP Patterns](#-http-patterns)
+   - [Pattern 2: Zero-Config HTTP](#pattern-2-zero-config-http)
+   - [Pattern 3: HTTP with Middleware](#pattern-3-http-with-middleware)
+   - [Pattern 4: Custom Agent Methods](#pattern-4-custom-agent-methods)
+10. [Streaming Protocols & Serialization](#streaming-protocols--serialization)
+11. [Common Errors & Solutions](#common-errors--solutions)
+12. [Best Practices](#best-practices)
 
 ---
 
@@ -85,12 +87,12 @@ This document provides a comprehensive technical deep-dive into building AI agen
 
 ### Data Flow Summary
 
-| Pattern | Frontend Hook   | Transport | Route                    | Agent Handler     | Response Type            |
-| ------- | --------------- | --------- | ------------------------ | ----------------- | ------------------------ |
-| 1       | `useAgent`      | WebSocket | `/agents/:agent/:id`     | `onMessage()`     | `connection.send()`      |
-| 2       | `useCompletion` | HTTP      | `/api/research`          | `onRequest()`     | `toTextStreamResponse()` |
-| 3       | `useCompletion` | HTTP      | `/api/research/initiate` | `initiateAgent()` | `toTextStreamResponse()` |
-| 4       | `useCompletion` | HTTP      | `/agents/:agent/:id`     | `onRequest()`     | `toTextStreamResponse()` |
+| Pattern | Name                 | Frontend Hook   | Transport | Route                    | Agent Handler     | Response Type            |
+| ------- | -------------------- | --------------- | --------- | ------------------------ | ----------------- | ------------------------ |
+| 1       | WebSocket Streaming  | `useAgent`      | WebSocket | `/agents/:agent/:id`     | `onMessage()`     | `connection.send()`      |
+| 2       | Zero-Config HTTP     | `useCompletion` | HTTP      | `/agents/:agent/:id`     | `onRequest()`     | `toTextStreamResponse()` |
+| 3       | HTTP with Middleware | `useCompletion` | HTTP      | `/api/research`          | `onRequest()`     | `toTextStreamResponse()` |
+| 4       | Custom Agent Methods | `useCompletion` | HTTP      | `/api/research/initiate` | `initiateAgent()` | `toTextStreamResponse()` |
 
 ---
 
@@ -697,7 +699,13 @@ app.all("/agents/*", ...);      // Never reached
 
 ---
 
-## Pattern 1: WebSocket Real-time (useAgent)
+## 🔌 WebSocket Patterns
+
+Persistent bidirectional connections for real-time communication.
+
+---
+
+## Pattern 1: WebSocket Streaming
 
 This pattern establishes a persistent WebSocket connection for bidirectional real-time communication.
 
@@ -870,9 +878,98 @@ async onMessage(connection: Connection, message: string) {
 
 ---
 
-## Pattern 2: HTTP Streaming via API Route
+## 🌐 HTTP Patterns
 
-This pattern uses standard HTTP with streaming responses, routed through a custom Hono endpoint.
+Request-response streaming, ordered from simplest to most flexible.
+
+---
+
+## Pattern 2: Zero-Config HTTP
+
+This is the simplest pattern—frontend talks directly to the agent without any custom API routes.
+
+### Frontend Implementation
+
+```typescript
+// app/routes/http-direct.tsx
+
+import { useState } from "react";
+import { useSearchParams } from "react-router";
+import { useCompletion } from "@ai-sdk/react";
+
+export default function HttpDirectPage() {
+  const [searchParams] = useSearchParams();
+  const agent = searchParams.get("agent") || "research";
+
+  const [sessionId] = useState<string>(() =>
+    Math.random().toString(36).substring(2, 8)
+  );
+  const [prompt, setPrompt] = useState("");
+
+  // Agent name is kebab-cased
+  const agentName = agent === "research" ? "research-agent" : "support-agent";
+
+  const { completion, complete, isLoading, error } = useCompletion({
+    // Point DIRECTLY to the agent URL pattern
+    // No custom Hono route needed!
+    api: `/agents/${agentName}/${sessionId}`,
+    streamProtocol: "text",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim() || isLoading) return;
+
+    await complete(prompt.trim(), {
+      body: { prompt: prompt.trim() },
+    });
+  };
+
+  // ... rendering
+}
+```
+
+### Backend (No Custom Route Needed)
+
+The existing `routeAgentRequest()` middleware handles everything:
+
+```typescript
+// workers/app.ts
+
+// This single route handles direct HTTP access
+app.all("/agents/*", async (c) => {
+  return (
+    (await routeAgentRequest(c.req.raw, c.env)) ||
+    c.json({ error: "Agent not found" }, 404)
+  );
+});
+```
+
+### How It Works
+
+1. Frontend POSTs to `/agents/research-agent/abc123`
+2. `routeAgentRequest()` parses the URL:
+   - Agent class: `research-agent` → `ResearchAgent`
+   - Instance ID: `abc123`
+3. Looks up `env.ResearchAgent` binding
+4. Forwards request to that agent instance
+5. Agent's `onRequest()` handles it
+6. Response streams back to frontend
+
+### Trade-offs
+
+| Pros               | Cons                     |
+| ------------------ | ------------------------ |
+| Simplest setup     | No middleware layer      |
+| Zero configuration | No auth/validation       |
+| Fast prototyping   | Direct endpoint exposure |
+| Less code          | Less control             |
+
+---
+
+## Pattern 3: HTTP with Middleware
+
+This pattern uses standard HTTP with streaming responses, routed through a custom Hono endpoint for full middleware control.
 
 ### Frontend Implementation
 
@@ -1016,7 +1113,7 @@ async onRequest(request: Request) {
 
 ---
 
-## Pattern 3: Direct RPC Method Invocation
+## Pattern 4: Custom Agent Methods
 
 This pattern demonstrates calling custom methods on the agent directly, without going through `onRequest()`.
 
@@ -1052,7 +1149,7 @@ export default function HttpStreamingInitiatePage() {
     });
   };
 
-  // ... same rendering as Pattern 2
+  // ... same rendering as Pattern 3
 }
 ```
 
@@ -1103,7 +1200,7 @@ initiateAgent(prompt: string): Response {
 }
 ```
 
-### Why Use Custom RPC Methods?
+### Why Use Custom Agent Methods?
 
 1. **Multiple entry points**: One agent class, multiple operations
 
@@ -1128,89 +1225,6 @@ initiateAgent(prompt: string): Response {
    ```
 
 3. **Type safety**: Method parameters are typed (though you need casting at the call site)
-
----
-
-## Pattern 4: Auto-Routed Direct Access
-
-This is the simplest pattern—frontend talks directly to the agent without any custom API routes.
-
-### Frontend Implementation
-
-```typescript
-// app/routes/http-direct.tsx
-
-import { useState } from "react";
-import { useSearchParams } from "react-router";
-import { useCompletion } from "@ai-sdk/react";
-
-export default function HttpDirectPage() {
-  const [searchParams] = useSearchParams();
-  const agent = searchParams.get("agent") || "research";
-
-  const [sessionId] = useState<string>(() =>
-    Math.random().toString(36).substring(2, 8)
-  );
-  const [prompt, setPrompt] = useState("");
-
-  // Agent name is kebab-cased
-  const agentName = agent === "research" ? "research-agent" : "support-agent";
-
-  const { completion, complete, isLoading, error } = useCompletion({
-    // Point DIRECTLY to the agent URL pattern
-    // No custom Hono route needed!
-    api: `/agents/${agentName}/${sessionId}`,
-    streamProtocol: "text",
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim() || isLoading) return;
-
-    await complete(prompt.trim(), {
-      body: { prompt: prompt.trim() },
-    });
-  };
-
-  // ... rendering
-}
-```
-
-### Backend (No Custom Route Needed)
-
-The existing `routeAgentRequest()` middleware handles everything:
-
-```typescript
-// workers/app.ts
-
-// This single route handles direct HTTP access
-app.all("/agents/*", async (c) => {
-  return (
-    (await routeAgentRequest(c.req.raw, c.env)) ||
-    c.json({ error: "Agent not found" }, 404)
-  );
-});
-```
-
-### How It Works
-
-1. Frontend POSTs to `/agents/research-agent/abc123`
-2. `routeAgentRequest()` parses the URL:
-   - Agent class: `research-agent` → `ResearchAgent`
-   - Instance ID: `abc123`
-3. Looks up `env.ResearchAgent` binding
-4. Forwards request to that agent instance
-5. Agent's `onRequest()` handles it
-6. Response streams back to frontend
-
-### Trade-offs
-
-| Pros               | Cons                     |
-| ------------------ | ------------------------ |
-| Simplest setup     | No middleware layer      |
-| Zero configuration | No auth/validation       |
-| Fast prototyping   | Direct endpoint exposure |
-| Less code          | Less control             |
 
 ---
 
@@ -1400,16 +1414,16 @@ const app = new Hono<{ Bindings: Env }>(); // Use generated Env type
 
 ## Summary
 
-| Pattern        | Best For            | Hook            | Transport | Complexity |
-| -------------- | ------------------- | --------------- | --------- | ---------- |
-| 1. WebSocket   | Real-time chat      | `useAgent`      | WebSocket | Higher     |
-| 2. API Route   | Middleware needs    | `useCompletion` | HTTP      | Medium     |
-| 3. RPC Method  | Multiple operations | `useCompletion` | HTTP      | Medium     |
-| 4. Auto-Routed | Quick prototypes    | `useCompletion` | HTTP      | Lowest     |
+| Pattern | Name                 | Best For            | Hook            | Transport | Complexity |
+| ------- | -------------------- | ------------------- | --------------- | --------- | ---------- |
+| 1       | WebSocket Streaming  | Real-time chat      | `useAgent`      | WebSocket | Higher     |
+| 2       | Zero-Config HTTP     | Quick prototypes    | `useCompletion` | HTTP      | Lowest     |
+| 3       | HTTP with Middleware | Auth/validation     | `useCompletion` | HTTP      | Medium     |
+| 4       | Custom Agent Methods | Multiple operations | `useCompletion` | HTTP      | Medium     |
 
 Choose based on your requirements:
 
-- **Need real-time updates?** → Pattern 1 (WebSocket)
-- **Need auth middleware?** → Pattern 2 (API Route)
-- **Need multiple operations?** → Pattern 3 (RPC)
-- **Need simplicity?** → Pattern 4 (Auto-Routed)
+- **Need real-time updates?** → Pattern 1 (WebSocket Streaming)
+- **Need simplicity?** → Pattern 2 (Zero-Config HTTP)
+- **Need auth middleware?** → Pattern 3 (HTTP with Middleware)
+- **Need multiple operations?** → Pattern 4 (Custom Agent Methods)

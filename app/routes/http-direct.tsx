@@ -10,15 +10,34 @@ import {
   CardContent,
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
-import { ArrowLeft, Send, Sparkles, Terminal, Info, Zap } from "lucide-react";
+import {
+  ArrowLeft,
+  Plane,
+  Sparkles,
+  Terminal,
+  Info,
+  Zap,
+  MapPin,
+  Rocket,
+} from "lucide-react";
 import { cn } from "~/lib/utils";
+import { Combobox, type ComboboxItem } from "~/components/ui/combobox";
+import { cities } from "~/constants/cities";
+
+// Transform cities array into combobox items
+const cityItems: ComboboxItem[] = cities.map((city) => ({
+  value: `${city.name}, ${city.country}`,
+  label: city.name,
+  sublabel: city.country,
+}));
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "HTTP Direct Agent" },
-    { name: "description", content: "Direct HTTP call to agent" },
+    { title: "Auto-Routed Direct" },
+    {
+      name: "description",
+      content: "Simplest path - no custom API route needed",
+    },
   ];
 }
 
@@ -34,7 +53,7 @@ export default function HttpDirectPage() {
 
   // Generate ID once on page load
   const [sessionId] = useState<string>(() => generateId());
-  const [prompt, setPrompt] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
   // Convert agent type to kebab-case class name
   const agentName = agent === "research" ? "research-agent" : "support-agent";
@@ -47,11 +66,12 @@ export default function HttpDirectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || isLoading) return;
+    if (!selectedCity.trim() || isLoading) return;
 
-    await complete(prompt.trim(), {
+    // Send city to the agent (prompt constructed server-side)
+    await complete("", {
       body: {
-        prompt: prompt.trim(),
+        city: selectedCity,
       },
     });
   };
@@ -62,81 +82,106 @@ export default function HttpDirectPage() {
   }, [completion]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-stone-800 bg-white/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="hover:bg-muted"
+              className="hover:bg-stone-100 border-2 border-transparent hover:border-stone-300 rounded-xl"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-emerald-500">
-                  <Zap className="w-5 h-5 fill-current" />
+              <h1 className="font-display text-2xl text-stone-800 flex items-center gap-2">
+                <span className="w-8 h-8 bg-amber-400 border-2 border-stone-800 rounded-lg flex items-center justify-center shadow-[2px_2px_0_#2D2A26]">
+                  <Rocket className="w-4 h-4 text-stone-800" />
                 </span>
-                HTTP Direct to Agent
+                Zero-Config HTTP
               </h1>
-              <p className="text-muted-foreground text-xs">
-                Pattern 4: Auto-Routed Access
+              <p className="font-body text-stone-500 text-sm">
+                Pattern 1: Auto-Routed Direct Access
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge
-              variant="outline"
-              className="border-emerald-500/20 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20"
-            >
+            <span className="inline-flex items-center bg-amber-100 border border-amber-300 text-stone-700 rounded-full px-3 py-1 font-body text-xs shadow-[1px_1px_0_#A09A92]">
               {agent === "research" ? "Research Agent" : "Support Agent"}
-            </Badge>
-            <Badge variant="secondary" className="font-mono text-xs">
+            </span>
+            <span className="inline-flex items-center bg-stone-100 border border-stone-300 text-stone-600 rounded-full px-3 py-1 font-mono text-xs shadow-[1px_1px_0_#A09A92]">
               ID: {sessionId}
-            </Badge>
+            </span>
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         {/* Input Area */}
-        <Card className="border-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-900/5 shadow-sm">
+        <Card className="bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-              Prompt the Agent
+            <CardTitle className="font-display text-xl text-stone-800 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              Plan Your Trip
             </CardTitle>
+            <CardDescription className="font-body text-stone-500">
+              Select a destination and we'll help you plan the perfect trip
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g., Plan a trip to Tokyo - I need weather, flights, and hotels"
-                className="w-full min-h-[120px] p-4 rounded-lg border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all text-sm"
+              <Combobox
+                items={cityItems}
+                value={selectedCity}
+                onValueChange={setSelectedCity}
                 disabled={isLoading}
+                accentColor="emerald"
+                placeholder="Select a city..."
+                searchPlaceholder="Search cities..."
+                emptyText="No city found."
+                label="Destination"
+                icon={
+                  <MapPin
+                    className={cn(
+                      "h-5 w-5",
+                      selectedCity ? "text-stone-800" : "text-stone-400"
+                    )}
+                  />
+                }
               />
+
+              {selectedCity && (
+                <div className="p-4 rounded-xl bg-amber-50 border-2 border-dashed border-amber-300">
+                  <p className="font-body text-sm text-stone-700">
+                    <span className="font-semibold">Trip plan:</span> We'll
+                    research weather, news, and travel advisories for{" "}
+                    <span className="font-semibold text-amber-700">
+                      {selectedCity}
+                    </span>
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+                <p className="font-body text-xs text-stone-500">
                   Reload page for a new session ID
                 </p>
                 <Button
                   type="submit"
-                  disabled={!prompt.trim() || isLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={!selectedCity.trim() || isLoading}
+                  className="bg-amber-400 hover:bg-amber-500 text-stone-800 font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26] hover:shadow-[2px_2px_0_#2D2A26] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                 >
                   {isLoading ? (
                     <>
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Streaming...
+                      <span className="w-4 h-4 border-2 border-stone-800/30 border-t-stone-800 rounded-full animate-spin mr-2" />
+                      Planning...
                     </>
                   ) : (
                     <>
-                      Send Message
-                      <Send className="w-4 h-4 ml-2" />
+                      <Plane className="w-4 h-4 mr-2" />
+                      Start Planning
                     </>
                   )}
                 </Button>
@@ -146,36 +191,38 @@ export default function HttpDirectPage() {
         </Card>
 
         {/* Response Area */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground px-1">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg text-stone-800 px-1">
             Agent Response
           </h2>
           <Card
             className={cn(
-              "min-h-[300px] transition-colors",
+              "min-h-[300px] bg-white border-2 rounded-2xl transition-all",
               isLoading
-                ? "border-emerald-500/40 shadow-[0_0_15px_-3px_rgba(16,185,129,0.15)]"
-                : "border-border"
+                ? "border-amber-400 shadow-[4px_4px_0_#F5A623]"
+                : "border-stone-800 shadow-[4px_4px_0_#2D2A26]"
             )}
           >
             <CardContent className="p-6">
               {error && (
-                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive mb-4 text-sm">
+                <div className="p-4 bg-rose-50 border-2 border-dashed border-rose-300 rounded-xl text-rose-700 mb-4 font-body text-sm">
                   {error.message}
                 </div>
               )}
 
               {completion ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <div className="whitespace-pre-wrap leading-relaxed">
+                <div className="prose prose-sm max-w-none font-body">
+                  <div className="whitespace-pre-wrap leading-relaxed text-stone-700">
                     {completion}
                   </div>
                   <div ref={messagesEndRef} />
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 py-12">
-                  <Terminal className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm">Response will stream here via HTTP</p>
+                <div className="h-full flex flex-col items-center justify-center text-stone-400 py-12">
+                  <Terminal className="w-12 h-12 mb-4 opacity-30" />
+                  <p className="font-body text-sm">
+                    Response will stream here via HTTP
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -184,43 +231,37 @@ export default function HttpDirectPage() {
 
         {/* Technical Details */}
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="bg-muted/30 border-dashed">
+          <Card className="bg-stone-100 border-2 border-dashed border-stone-400 rounded-2xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <CardTitle className="font-body text-sm font-semibold uppercase tracking-wider text-stone-600 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 Under the hood
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-md bg-background/50 border">
-                <Badge
-                  variant="outline"
-                  className="mt-0.5 bg-emerald-50/50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800"
-                >
+            <CardContent className="font-body text-sm text-stone-600 space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-stone-300">
+                <span className="inline-flex items-center bg-amber-100 border border-amber-300 text-amber-700 rounded-full px-2 py-0.5 text-xs font-semibold">
                   Client
-                </Badge>
+                </span>
                 <p>
                   Using{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     useCompletion()
                   </code>{" "}
                   to POST directly to{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     /agents/{agentName}/{sessionId}
                   </code>
                   .
                 </p>
               </div>
-              <div className="flex items-start gap-3 p-3 rounded-md bg-background/50 border">
-                <Badge
-                  variant="outline"
-                  className="mt-0.5 bg-emerald-50/50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800"
-                >
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-stone-300">
+                <span className="inline-flex items-center bg-amber-100 border border-amber-300 text-amber-700 rounded-full px-2 py-0.5 text-xs font-semibold">
                   Route
-                </Badge>
+                </span>
                 <p>
                   The{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     routeAgentRequest()
                   </code>{" "}
                   middleware automatically routes this to the agent.
@@ -229,35 +270,29 @@ export default function HttpDirectPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-emerald-50/10 dark:bg-emerald-900/5 border-emerald-500/20">
+          <Card className="bg-amber-50 border-2 border-amber-300 rounded-2xl shadow-[3px_3px_0_#E8941A]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <CardTitle className="font-body text-sm font-semibold uppercase tracking-wider text-amber-700 flex items-center gap-2">
                 <Zap className="w-4 h-4" />
                 API vs Direct
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm space-y-3">
-              <div className="p-3 rounded-md bg-background/50 border border-emerald-100 dark:border-emerald-900/30">
-                <span className="font-semibold text-xs text-muted-foreground block mb-1">
+            <CardContent className="font-body text-sm space-y-3">
+              <div className="p-3 rounded-xl bg-white border border-stone-300">
+                <span className="font-semibold text-xs text-stone-500 block mb-1">
                   Standard API Pattern
                 </span>
-                <code className="text-xs text-muted-foreground">
-                  /api/route
-                </code>{" "}
-                → <span className="text-muted-foreground/60">Hono</span> →{" "}
-                <code className="text-xs text-muted-foreground">
-                  agent.fetch()
-                </code>
+                <code className="text-xs text-stone-600">/api/route</code> →{" "}
+                <span className="text-stone-400">Hono</span> →{" "}
+                <code className="text-xs text-stone-600">agent.fetch()</code>
               </div>
-              <div className="p-3 rounded-md bg-emerald-50/50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                <span className="font-semibold text-xs text-emerald-600 dark:text-emerald-400 block mb-1">
+              <div className="p-3 rounded-xl bg-amber-100 border-2 border-amber-300">
+                <span className="font-semibold text-xs text-amber-700 block mb-1">
                   Direct Pattern
                 </span>
                 <code className="text-xs">/agents/name/id</code> →{" "}
-                <span className="text-emerald-600/60 dark:text-emerald-400/60">
-                  Auto Route
-                </span>{" "}
-                → <code className="text-xs">onRequest()</code>
+                <span className="text-amber-600/60">Auto Route</span> →{" "}
+                <code className="text-xs">onRequest()</code>
               </div>
             </CardContent>
           </Card>

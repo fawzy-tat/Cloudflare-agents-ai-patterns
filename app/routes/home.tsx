@@ -1,14 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/home";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -18,10 +10,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { ArrowRight, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Zap,
+  Code,
+  Sparkles,
+  Bot,
+  Monitor,
+  Lock,
+  MousePointer2,
+  Rocket,
+  Cloud,
+} from "lucide-react";
 import { cn } from "~/lib/utils";
 
 export function meta({}: Route.MetaArgs) {
@@ -32,7 +32,6 @@ export function meta({}: Route.MetaArgs) {
 }
 
 type AgentType = "research" | "support";
-type ColorTheme = "blue" | "orange" | "purple" | "emerald";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -61,244 +60,284 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="min-h-screen bg-stone-50">
       {/* Hero Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      <header className="border-b-2 border-stone-800 bg-white/90 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">
-                Agent Integration Patterns
+              <h1 className="font-display text-4xl md:text-5xl text-stone-800 tracking-tight transform -rotate-1">
+                Agent Routing Patterns
               </h1>
-              <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-                Explore four architectural patterns for integrating Cloudflare
-                Agents with the Vercel AI SDK.
+              <p className="font-body text-stone-600 mt-2 text-base max-w-2xl">
+                Four Ways to Connect Your Frontend to AI Agents on Cloudflare
               </p>
             </div>
-            <div className="hidden md:block">
-              <Badge
-                variant="secondary"
-                className="text-xs px-2.5 py-0.5 font-normal"
-              >
-                Cloudflare Workers + Hono + React Router
-              </Badge>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="inline-flex items-center bg-amber-100 border-2 border-amber-400 text-stone-800 rounded-full px-4 py-2 font-body text-sm shadow-[2px_2px_0_#2D2A26]">
+                <Cloud className="w-4 h-4 mr-2" />
+                Cloudflare + Vercel AI + Hono
+              </span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-12">
+      <main className="max-w-6xl mx-auto px-6 py-12 space-y-16">
         {/* Intro Section */}
         <section className="max-w-3xl">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            This educational guide demonstrates different trade-offs for
-            control, simplicity, and real-time capabilities when building AI
-            agents. Select a pattern below to see it in action.
-          </p>
+          <div className="bg-white border-2 border-stone-800 rounded-2xl p-6 shadow-[4px_4px_0_#2D2A26] transform rotate-[0.3deg]">
+            <p className="font-body text-stone-600 leading-relaxed text-lg">
+              This educational guide demonstrates different trade-offs for
+              control, simplicity, and real-time capabilities when building AI
+              agents. Select a pattern below to see it in action.
+            </p>
+          </div>
         </section>
 
-        {/* Patterns Grid */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Pattern 1: WebSocket Real-time */}
-          <PatternCard
-            id="websocket"
-            number={1}
-            title="WebSocket Real-time"
-            subtitle="Bidirectional streaming via persistent connection"
-            selectedAgent={selectedAgents.websocket}
-            onAgentChange={(agent) => handleAgentChange("websocket", agent)}
-            onStart={() => handleStart("websocket")}
-            frontendHook="useAgent"
-            backendHandler="onMessage()"
-            endpoint="/agents/:agent/:id"
-            description="Establishes a persistent WebSocket connection between the frontend and agent. Messages flow bidirectionally, enabling real-time updates and state synchronization. The connection automatically handles reconnection on network interruption."
-            lifecycle={[
-              {
-                step: "Connect",
-                desc: "useAgent() establishes WebSocket to /agents/:agent/:id",
-              },
-              {
-                step: "Route",
-                desc: "routeAgentRequest() upgrades to WebSocket, routes to Agent",
-              },
-              {
-                step: "Message",
-                desc: "Frontend sends JSON message via connection.send()",
-              },
-              {
-                step: "Process",
-                desc: "Agent.onMessage() receives and processes the message",
-              },
-              {
-                step: "Stream",
-                desc: "Agent streams response chunks via connection.send()",
-              },
-            ]}
-            characteristics={[
-              { label: "Transport", value: "WebSocket (persistent)" },
-              { label: "Direction", value: "Bidirectional" },
-              { label: "State Sync", value: "Built-in via setState" },
-              { label: "Reconnection", value: "Automatic" },
-            ]}
-            useCase="Best for chat interfaces, collaborative features, or any UI requiring real-time updates and state synchronization across clients."
-            badgeVariant="default"
-            techTags={["WebSocket", "Real-time", "Stateful"]}
-            color="blue"
-          />
+        {/* ═══════════════════════════════════════════════════════════════════
+            HTTP PATTERNS SECTION
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-400 border-2 border-stone-800 rounded-xl flex items-center justify-center shadow-[3px_3px_0_#2D2A26]">
+              <ArrowRight className="w-6 h-6 text-stone-800" />
+            </div>
+            <div>
+              <h2 className="font-display text-3xl text-stone-800 transform -rotate-[0.5deg]">
+                HTTP Patterns
+              </h2>
+              <p className="font-body text-stone-600">
+                Request-response streaming, ordered from simplest to most
+                flexible
+              </p>
+            </div>
+          </div>
 
-          {/* Pattern 2: Custom API Route */}
-          <PatternCard
-            id="apiRoute"
-            number={2}
-            title="Custom API Route"
-            subtitle="HTTP streaming through Hono middleware"
-            selectedAgent={selectedAgents.apiRoute}
-            onAgentChange={(agent) => handleAgentChange("apiRoute", agent)}
-            onStart={() => handleStart("apiRoute")}
-            frontendHook="useCompletion"
-            backendHandler="onRequest()"
-            endpoint="/api/research"
-            description="The traditional REST approach where a custom Hono route acts as an intermediary. This pattern provides full control over request processing, authentication, and response formatting before reaching the agent."
-            lifecycle={[
-              {
-                step: "Request",
-                desc: "useCompletion() POSTs to custom /api/research endpoint",
-              },
-              {
-                step: "Middleware",
-                desc: "Hono route processes request (auth, validation, etc.)",
-              },
-              {
-                step: "Invoke",
-                desc: "getAgentByName() retrieves agent, agent.fetch() called",
-              },
-              {
-                step: "Handler",
-                desc: "Agent.onRequest() processes and returns streaming response",
-              },
-              {
-                step: "Stream",
-                desc: "Response streams back through Hono to frontend",
-              },
-            ]}
-            characteristics={[
-              { label: "Transport", value: "HTTP (request/response)" },
-              { label: "Direction", value: "Unidirectional" },
-              { label: "Middleware", value: "Full Hono support" },
-              { label: "Control", value: "Maximum flexibility" },
-            ]}
-            useCase="Best when you need authentication middleware, request validation, rate limiting, or custom response formatting before agent processing."
-            badgeVariant="secondary"
-            techTags={["HTTP", "Hono Middleware", "REST"]}
-            color="orange"
-          />
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Pattern 1: Zero-Config HTTP */}
+            <PatternCard
+              number={1}
+              title="Zero-Config HTTP"
+              subtitle="Simplest path — no custom routes needed"
+              icon={<Rocket className="w-5 h-5" />}
+              selectedAgent={selectedAgents.autoRouted}
+              onAgentChange={(agent) => handleAgentChange("autoRouted", agent)}
+              onStart={() => handleStart("autoRouted")}
+              frontendHook="useCompletion"
+              backendHandler="onRequest()"
+              endpoint="/agents/:agent/:id"
+              description="The simplest integration pattern where the frontend communicates directly with the agent using the built-in routing. No custom Hono routes are required."
+              lifecycle={[
+                {
+                  step: "Request",
+                  desc: "useCompletion() POSTs directly to /agents/:agent/:id",
+                },
+                {
+                  step: "Auto-Route",
+                  desc: "routeAgentRequest() matches URL pattern",
+                },
+                {
+                  step: "Dispatch",
+                  desc: "Request forwarded to Agent.onRequest()",
+                },
+                {
+                  step: "Stream",
+                  desc: "Response streams directly to frontend",
+                },
+              ]}
+              useCase="Best for prototypes and simple use cases without authentication requirements."
+              tags={["Zero-Config", "Auto-Routed", "Quick Start"]}
+              accentColor="golden"
+            />
 
-          {/* Pattern 3: RPC Method Invocation */}
-          <PatternCard
-            id="rpcMethod"
-            number={3}
-            title="Direct RPC Method"
-            subtitle="Calling custom agent methods directly"
-            selectedAgent={selectedAgents.rpcMethod}
-            onAgentChange={(agent) => handleAgentChange("rpcMethod", agent)}
-            onStart={() => handleStart("rpcMethod")}
-            frontendHook="useCompletion"
-            backendHandler="initiateAgent()"
-            endpoint="/api/research/initiate"
-            description="Demonstrates calling custom-named methods on the agent directly via RPC, rather than using the built-in onRequest handler. This allows defining multiple entry points with different behaviors on a single agent."
-            lifecycle={[
-              {
-                step: "Request",
-                desc: "useCompletion() POSTs to /api/research/initiate",
-              },
-              { step: "Middleware", desc: "Hono route processes request" },
-              {
-                step: "RPC Call",
-                desc: "agent.initiateAgent(prompt) called directly",
-              },
-              {
-                step: "Execute",
-                desc: "Custom method creates VercelAgent and streams",
-              },
-              {
-                step: "Return",
-                desc: "Method returns Response, streams to frontend",
-              },
-            ]}
-            characteristics={[
-              { label: "Transport", value: "HTTP (request/response)" },
-              { label: "Method Type", value: "Custom RPC" },
-              { label: "Flexibility", value: "Multiple entry points" },
-              { label: "Serialization", value: "Must return Response" },
-            ]}
-            useCase="Best when you need multiple distinct operations on one agent, or want cleaner method signatures without Request object parsing."
-            badgeVariant="secondary"
-            techTags={["RPC", "Method Call", "Custom Logic"]}
-            color="purple"
-          />
+            {/* Pattern 2: HTTP with Middleware */}
+            <PatternCard
+              number={2}
+              title="HTTP with Middleware"
+              subtitle="Full control via custom Hono routes"
+              icon={<Lock className="w-5 h-5" />}
+              selectedAgent={selectedAgents.apiRoute}
+              onAgentChange={(agent) => handleAgentChange("apiRoute", agent)}
+              onStart={() => handleStart("apiRoute")}
+              frontendHook="useCompletion"
+              backendHandler="onRequest()"
+              endpoint="/api/research"
+              description="The production-ready approach where a custom Hono route acts as an intermediary with full control over authentication, rate limiting, and validation."
+              lifecycle={[
+                {
+                  step: "Request",
+                  desc: "useCompletion() POSTs to custom /api/research",
+                },
+                {
+                  step: "Middleware",
+                  desc: "Hono route processes (auth, validation)",
+                },
+                { step: "Invoke", desc: "getAgentByName() retrieves agent" },
+                { step: "Stream", desc: "Response streams through Hono" },
+              ]}
+              useCase="Best when you need authentication middleware, request validation, or rate limiting."
+              tags={["Middleware", "Auth Ready", "Production"]}
+              accentColor="golden"
+            />
 
-          {/* Pattern 4: Auto-Routed Direct */}
-          <PatternCard
-            id="autoRouted"
-            number={4}
-            title="Auto-Routed Direct"
-            subtitle="Simplest path - no custom API route needed"
-            selectedAgent={selectedAgents.autoRouted}
-            onAgentChange={(agent) => handleAgentChange("autoRouted", agent)}
-            onStart={() => handleStart("autoRouted")}
-            frontendHook="useCompletion"
-            backendHandler="onRequest()"
-            endpoint="/agents/:agent/:id"
-            description="The simplest integration pattern where the frontend communicates directly with the agent using the built-in routing. No custom Hono routes are required - routeAgentRequest() handles everything automatically."
-            lifecycle={[
-              {
-                step: "Request",
-                desc: "useCompletion() POSTs directly to /agents/:agent/:id",
-              },
-              {
-                step: "Auto-Route",
-                desc: "routeAgentRequest() matches URL pattern",
-              },
-              {
-                step: "Dispatch",
-                desc: "Request forwarded to Agent.onRequest()",
-              },
-              {
-                step: "Process",
-                desc: "Agent processes and returns streaming response",
-              },
-              { step: "Stream", desc: "Response streams directly to frontend" },
-            ]}
-            characteristics={[
-              { label: "Transport", value: "HTTP (request/response)" },
-              { label: "Custom Route", value: "Not required" },
-              { label: "Complexity", value: "Minimal" },
-              { label: "Trade-off", value: "Less middleware control" },
-            ]}
-            useCase="Best for simple use cases without authentication requirements, or when you want the fastest path to a working agent integration."
-            badgeVariant="secondary"
-            techTags={["Direct Access", "Zero-Config", "File-System Routing"]}
-            color="emerald"
-          />
-        </div>
+            {/* Pattern 3: Custom Agent Methods */}
+            <PatternCard
+              number={3}
+              title="Custom Agent Methods"
+              subtitle="Named RPC methods for complex agents"
+              icon={<MousePointer2 className="w-5 h-5" />}
+              selectedAgent={selectedAgents.rpcMethod}
+              onAgentChange={(agent) => handleAgentChange("rpcMethod", agent)}
+              onStart={() => handleStart("rpcMethod")}
+              frontendHook="useCompletion"
+              backendHandler="initiateAgent()"
+              endpoint="/api/research/initiate"
+              description="Call custom-named methods on the agent directly via RPC. This allows multiple entry points like searchFlights(), bookHotel(), getItinerary()."
+              lifecycle={[
+                {
+                  step: "Request",
+                  desc: "useCompletion() POSTs to /api/research/initiate",
+                },
+                {
+                  step: "RPC Call",
+                  desc: "agent.initiateAgent(prompt) called directly",
+                },
+                { step: "Execute", desc: "Custom method creates VercelAgent" },
+                { step: "Return", desc: "Method returns streaming Response" },
+              ]}
+              useCase="Best when you need multiple distinct operations on one agent."
+              tags={["RPC Methods", "Multi-Operation", "Advanced"]}
+              accentColor="crimson"
+            />
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            WEBSOCKET PATTERNS SECTION
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-400 border-2 border-stone-800 rounded-xl flex items-center justify-center shadow-[3px_3px_0_#2D2A26]">
+              <Zap className="w-6 h-6 text-stone-800" />
+            </div>
+            <div>
+              <h2 className="font-display text-3xl text-stone-800 transform -rotate-[0.5deg]">
+                WebSocket Patterns
+              </h2>
+              <p className="font-body text-stone-600">
+                Persistent bidirectional connections for real-time communication
+              </p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Pattern 4: WebSocket Streaming */}
+            <PatternCard
+              number={4}
+              title="WebSocket Streaming"
+              subtitle="Bidirectional real-time connection"
+              icon={<Zap className="w-5 h-5" />}
+              selectedAgent={selectedAgents.websocket}
+              onAgentChange={(agent) => handleAgentChange("websocket", agent)}
+              onStart={() => handleStart("websocket")}
+              frontendHook="useAgent"
+              backendHandler="onMessage()"
+              endpoint="/agents/:agent/:id"
+              description="Establishes a persistent WebSocket connection enabling real-time updates and state synchronization with automatic reconnection."
+              lifecycle={[
+                { step: "Connect", desc: "useAgent() establishes WebSocket" },
+                {
+                  step: "Route",
+                  desc: "routeAgentRequest() upgrades connection",
+                },
+                {
+                  step: "Message",
+                  desc: "Frontend sends via connection.send()",
+                },
+                { step: "Stream", desc: "Agent streams chunks back" },
+              ]}
+              useCase="Best for chat interfaces, collaborative features, or real-time state sync."
+              tags={["WebSocket", "Real-time", "Stateful"]}
+              accentColor="golden"
+            />
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            EXPLORE VERCEL AI FEATURES
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-rose-500 border-2 border-stone-800 rounded-xl flex items-center justify-center shadow-[3px_3px_0_#2D2A26]">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="font-display text-3xl text-stone-800 transform -rotate-[0.5deg]">
+                Explore Vercel AI Features
+              </h2>
+              <p className="font-body text-stone-600">
+                Powerful AI SDK features that work seamlessly with Cloudflare
+                Workers
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* streamObject Card */}
+            <FeatureCard
+              icon={<Code className="w-6 h-6 text-charcoal" />}
+              title="streamObject()"
+              badge="Structured Data"
+              description="Stream structured JSON objects, arrays, and enums directly from LLM responses — no agents required."
+              buttonText="Explore streamObject()"
+              onClick={() => navigate("/object-streaming")}
+              accentColor="golden"
+            />
+
+            {/* Generative UI Card */}
+            <FeatureCard
+              icon={<Sparkles className="w-6 h-6 text-charcoal" />}
+              title="Generative UI"
+              badge="Tool Rendering"
+              description="Render dynamic React components from LLM tool calls — weather cards, stock tickers, and more."
+              buttonText="Explore Generative UI"
+              onClick={() => navigate("/generative-ui")}
+              accentColor="crimson"
+            />
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t py-6 text-center text-muted-foreground text-sm">
-        <p>
-          Built with Cloudflare Workers, Hono, React Router 7, and Vercel AI
-          SDK.
-        </p>
+      {/* Footer */}
+      <footer className="border-t-2 border-stone-800 bg-white py-8 mt-12">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <p className="font-body text-stone-600">
+            Built with{" "}
+            <span className="font-semibold text-stone-800">
+              Cloudflare Workers
+            </span>
+            , <span className="font-semibold text-stone-800">Hono</span>,{" "}
+            <span className="font-semibold text-stone-800">React Router 7</span>
+            , and{" "}
+            <span className="font-semibold text-stone-800">Vercel AI SDK</span>.
+          </p>
+        </div>
       </footer>
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PATTERN CARD COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 interface PatternCardProps {
-  id: string;
   number: number;
   title: string;
   subtitle: string;
+  icon: React.ReactNode;
   selectedAgent: AgentType;
   onAgentChange: (agent: AgentType) => void;
   onStart: () => void;
@@ -307,62 +346,16 @@ interface PatternCardProps {
   endpoint: string;
   description: string;
   lifecycle: { step: string; desc: string }[];
-  characteristics: { label: string; value: string }[];
   useCase: string;
-  badgeVariant?: "default" | "secondary" | "destructive" | "outline";
-  techTags?: string[];
-  color: ColorTheme;
+  tags: string[];
+  accentColor: "golden" | "crimson";
 }
 
-const colorStyles: Record<
-  ColorTheme,
-  {
-    card: string;
-    flow: string;
-    alert: string;
-    icon: string;
-    tag: string;
-  }
-> = {
-  blue: {
-    card: "border-blue-500/20 bg-blue-50/10 dark:bg-blue-900/10",
-    flow: "bg-blue-100/40 dark:bg-blue-900/30 border-blue-200/60 dark:border-blue-800/60",
-    alert:
-      "bg-blue-100/50 dark:bg-blue-900/30 border-blue-200/60 dark:border-blue-800/60 text-blue-900 dark:text-blue-100",
-    icon: "text-blue-600 dark:text-blue-400",
-    tag: "bg-blue-500/10 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-700",
-  },
-  orange: {
-    card: "border-orange-500/20 bg-orange-50/10 dark:bg-orange-900/10",
-    flow: "bg-orange-100/40 dark:bg-orange-900/30 border-orange-200/60 dark:border-orange-800/60",
-    alert:
-      "bg-orange-100/50 dark:bg-orange-900/30 border-orange-200/60 dark:border-orange-800/60 text-orange-900 dark:text-orange-100",
-    icon: "text-orange-600 dark:text-orange-400",
-    tag: "bg-orange-500/10 text-orange-700 border-orange-300 dark:bg-orange-900/40 dark:text-orange-200 dark:border-orange-700",
-  },
-  purple: {
-    card: "border-purple-500/20 bg-purple-50/10 dark:bg-purple-900/10",
-    flow: "bg-purple-100/40 dark:bg-purple-900/30 border-purple-200/60 dark:border-purple-800/60",
-    alert:
-      "bg-purple-100/50 dark:bg-purple-900/30 border-purple-200/60 dark:border-purple-800/60 text-purple-900 dark:text-purple-100",
-    icon: "text-purple-600 dark:text-purple-400",
-    tag: "bg-purple-500/10 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-200 dark:border-purple-700",
-  },
-  emerald: {
-    card: "border-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-900/10",
-    flow: "bg-emerald-100/40 dark:bg-emerald-900/30 border-emerald-200/60 dark:border-emerald-800/60",
-    alert:
-      "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/60 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-100",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    tag: "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-700",
-  },
-};
-
 function PatternCard({
-  id,
   number,
   title,
   subtitle,
+  icon,
   selectedAgent,
   onAgentChange,
   onStart,
@@ -371,169 +364,162 @@ function PatternCard({
   endpoint,
   description,
   lifecycle,
-  characteristics,
   useCase,
-  badgeVariant = "secondary",
-  techTags = [],
-  color,
+  tags,
+  accentColor,
 }: PatternCardProps) {
-  const styles = colorStyles[color];
+  const [activeTab, setActiveTab] = useState<"overview" | "lifecycle">(
+    "overview"
+  );
+
+  const accentStyles = {
+    golden: {
+      badge: "bg-amber-400 text-stone-900 border-stone-800",
+      tagBg: "bg-amber-50 border-amber-300",
+      flowBg: "bg-amber-100/60 border-amber-300",
+    },
+    crimson: {
+      badge: "bg-rose-500 text-white border-stone-800",
+      tagBg: "bg-rose-50 border-rose-300",
+      flowBg: "bg-rose-100/60 border-rose-300",
+    },
+  };
+
+  const styles = accentStyles[accentColor];
 
   return (
-    <Card
-      className={cn(
-        "flex flex-col h-full border-2 hover:border-primary/20 transition-all shadow-sm",
-        styles.card
-      )}
-    >
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={badgeVariant}
-                className="h-6 w-6 rounded-full flex items-center justify-center p-0 shrink-0 text-xs"
-              >
-                {number}
-              </Badge>
-              <CardTitle className="text-xl">{title}</CardTitle>
+    <div className="bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26] hover:shadow-[6px_6px_0_#2D2A26] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="p-6 pb-4">
+        <div className="flex items-start gap-3 mb-3">
+          {/* Number + Icon combo */}
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "w-7 h-7 border-2 rounded-full flex items-center justify-center font-display font-bold text-sm shrink-0",
+                styles.badge
+              )}
+            >
+              {number}
+            </span>
+            <div className="w-9 h-9 bg-stone-100 border-2 border-stone-800 rounded-lg flex items-center justify-center shrink-0">
+              {icon}
             </div>
-            <CardDescription className="text-sm font-medium">
-              {subtitle}
-            </CardDescription>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-2xl text-stone-800 leading-tight">
+              {title}
+            </h3>
+            <p className="font-body text-stone-500 text-sm">{subtitle}</p>
           </div>
         </div>
-        {/* Tech Tags */}
-        {techTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-2">
-            {techTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className={cn(
-                  "text-[10px] px-2 py-0 h-5 rounded-full border",
-                  styles.tag
-                )}
-              >
-                {tag}
-              </Badge>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className={cn(
+                "inline-flex items-center rounded-full px-3 py-1 font-body text-xs text-stone-700 border shadow-[1px_1px_0_#A09A92]",
+                styles.tagBg
+              )}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Flow Diagram - Inline */}
+      <div className="px-6">
+        <div
+          className={cn(
+            "rounded-xl px-3 py-2.5 border-2 flex items-center justify-between gap-1.5",
+            styles.flowBg
+          )}
+        >
+          <FlowBadge>{frontendHook}</FlowBadge>
+          <ArrowRight className="w-3 h-3 text-stone-400 shrink-0" />
+          <FlowBadge>{endpoint}</FlowBadge>
+          <ArrowRight className="w-3 h-3 text-stone-400 shrink-0" />
+          <FlowBadge>{backendHandler}</FlowBadge>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="px-6 py-4 flex-1">
+        {/* Tab Buttons */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={cn(
+              "px-4 py-2 rounded-lg font-body text-sm border-2 transition-all",
+              activeTab === "overview"
+                ? "bg-stone-800 text-white border-stone-800"
+                : "bg-transparent text-stone-700 border-stone-300 hover:border-stone-800"
+            )}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("lifecycle")}
+            className={cn(
+              "px-4 py-2 rounded-lg font-body text-sm border-2 transition-all",
+              activeTab === "lifecycle"
+                ? "bg-stone-800 text-white border-stone-800"
+                : "bg-transparent text-stone-700 border-stone-300 hover:border-stone-800"
+            )}
+          >
+            Lifecycle
+          </button>
+        </div>
+
+        {activeTab === "overview" ? (
+          <div className="space-y-4">
+            <p className="font-body text-stone-600 text-sm leading-relaxed">
+              {description}
+            </p>
+            <div className="bg-stone-100 border-2 border-dashed border-stone-400 rounded-xl p-4">
+              <div className="flex items-start gap-2">
+                <Zap className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-body font-semibold text-stone-800 text-xs uppercase tracking-wide mb-1">
+                    When to Use
+                  </p>
+                  <p className="font-body text-stone-600 text-sm">{useCase}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative border-l-2 border-stone-300 pl-4 space-y-4">
+            {lifecycle.map((item, i) => (
+              <div key={i} className="relative">
+                <div className="absolute -left-[21px] top-1.5 h-3 w-3 rounded-full bg-amber-400 border-2 border-stone-800" />
+                <div>
+                  <p className="font-body font-semibold text-stone-800 text-sm">
+                    {item.step}
+                  </p>
+                  <p className="font-body text-stone-500 text-xs">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 space-y-6">
-        {/* Visual Flow */}
-        <div
-          className={cn(
-            "rounded-lg p-3 text-xs font-mono border flex items-center justify-between gap-2 overflow-x-auto",
-            styles.flow
-          )}
-        >
-          <Badge
-            variant="secondary"
-            className="bg-background/80 whitespace-nowrap shadow-sm"
-          >
-            {frontendHook}
-          </Badge>
-          <ArrowRight className={cn("w-3 h-3 shrink-0", styles.icon)} />
-          <Badge
-            variant="secondary"
-            className="bg-background/80 whitespace-nowrap shadow-sm"
-          >
-            {endpoint}
-          </Badge>
-          <ArrowRight className={cn("w-3 h-3 shrink-0", styles.icon)} />
-          <Badge
-            variant="secondary"
-            className="bg-background/80 whitespace-nowrap shadow-sm"
-          >
-            {backendHandler}
-          </Badge>
-        </div>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-9">
-            <TabsTrigger value="overview" className="text-xs">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="lifecycle" className="text-xs">
-              Lifecycle
-            </TabsTrigger>
-            <TabsTrigger value="details" className="text-xs">
-              Details
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4 mt-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {description}
-            </p>
-            <Alert className={cn(styles.alert)}>
-              <Zap className={cn("h-4 w-4", styles.icon)} />
-              <AlertTitle className="text-xs font-semibold">
-                When to Use
-              </AlertTitle>
-              <AlertDescription className="text-xs mt-1 opacity-90">
-                {useCase}
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
-
-          <TabsContent value="lifecycle" className="mt-4">
-            <div className="relative border-l border-muted pl-4 space-y-4 py-1">
-              {lifecycle.map((item, i) => (
-                <div key={i} className="relative">
-                  <div
-                    className={cn(
-                      "absolute -left-[21px] top-1.5 h-2 w-2 rounded-full ring-4 ring-background",
-                      styles.icon
-                        .replace("text-", "bg-")
-                        .replace("dark:text-", "dark:bg-")
-                    )}
-                  />
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-semibold leading-none">
-                      {item.step}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="details" className="mt-4">
-            <div className="grid gap-2">
-              {characteristics.map((char, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between items-center text-sm p-2 rounded-md bg-background/40 border border-transparent hover:border-border transition-colors"
-                >
-                  <span className="text-muted-foreground text-xs">
-                    {char.label}
-                  </span>
-                  <span className="font-medium font-mono text-xs">
-                    {char.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-
-      <Separator className="opacity-50" />
-
-      <CardFooter className="pt-4 gap-3 bg-muted/5">
+      {/* Footer Actions */}
+      <div className="p-6 pt-4 border-t-2 border-stone-200 bg-stone-50/50 flex items-center gap-3">
         <Select
           value={selectedAgent}
           onValueChange={(val) => onAgentChange(val as AgentType)}
         >
-          <SelectTrigger className="w-[180px] bg-background h-9 text-xs">
+          <SelectTrigger className="w-[160px] bg-white border-2 border-stone-800 rounded-xl h-11 font-body text-sm shadow-[2px_2px_0_#2D2A26]">
             <SelectValue placeholder="Select Agent" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="border-2 border-stone-800 rounded-xl">
             <SelectItem value="research">Research Agent</SelectItem>
             <SelectItem value="support" disabled>
               Support Agent (Soon)
@@ -544,13 +530,110 @@ function PatternCard({
         <Button
           onClick={onStart}
           disabled={selectedAgent === "support"}
-          className="flex-1 h-9 text-xs"
-          size="sm"
+          className={cn(
+            "flex-1 h-11 font-body font-semibold text-sm rounded-xl border-2 border-stone-800 shadow-[3px_3px_0_#2D2A26] hover:shadow-[2px_2px_0_#2D2A26] hover:translate-x-0.5 hover:translate-y-0.5 active:shadow-[1px_1px_0_#2D2A26] active:translate-x-1 active:translate-y-1 transition-all",
+            accentColor === "crimson"
+              ? "bg-rose-500 text-white hover:bg-rose-600"
+              : "bg-amber-400 text-stone-900 hover:bg-amber-500"
+          )}
         >
           Try Pattern
-          <ArrowRight className="ml-2 w-3 h-3" />
+          <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOW BADGE COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function FlowBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="bg-white border border-stone-700 rounded-md px-2 py-1 font-mono text-[10px] text-stone-800 whitespace-nowrap shadow-[1px_1px_0_#2D2A26]">
+      {children}
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEATURE CARD COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  badge: string;
+  description: string;
+  buttonText: string;
+  onClick: () => void;
+  accentColor: "golden" | "crimson";
+}
+
+function FeatureCard({
+  icon,
+  title,
+  badge,
+  description,
+  buttonText,
+  onClick,
+  accentColor,
+}: FeatureCardProps) {
+  const bgColor = accentColor === "golden" ? "bg-amber-100" : "bg-rose-100";
+  const buttonColor =
+    accentColor === "golden"
+      ? "bg-amber-400 hover:bg-amber-500 text-stone-900"
+      : "bg-rose-500 hover:bg-rose-600 text-white";
+
+  return (
+    <div
+      className={cn(
+        "bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26] hover:shadow-[6px_6px_0_#2D2A26] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+      )}
+    >
+      <div className="p-6 space-y-4">
+        <div className="flex items-start gap-4">
+          <div
+            className={cn(
+              "w-12 h-12 rounded-xl border-2 border-stone-800 flex items-center justify-center shrink-0 shadow-[2px_2px_0_#2D2A26]",
+              bgColor
+            )}
+          >
+            {icon}
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-display text-2xl text-stone-800 flex items-center gap-2">
+              {title}
+            </h3>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-3 py-0.5 font-body text-xs border shadow-[1px_1px_0_#A09A92]",
+                bgColor,
+                "text-stone-700 border-stone-300"
+              )}
+            >
+              {badge}
+            </span>
+          </div>
+        </div>
+
+        <p className="font-body text-stone-600 text-sm leading-relaxed">
+          {description}
+        </p>
+
+        <Button
+          onClick={onClick}
+          className={cn(
+            "w-full h-11 font-body font-semibold text-sm rounded-xl border-2 border-stone-800 shadow-[3px_3px_0_#2D2A26] hover:shadow-[2px_2px_0_#2D2A26] hover:translate-x-0.5 hover:translate-y-0.5 transition-all",
+            buttonColor
+          )}
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          {buttonText}
+          <ArrowRight className="ml-auto w-4 h-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

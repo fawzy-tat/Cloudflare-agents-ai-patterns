@@ -6,4 +6,6 @@ export default [
 	route("http-streaming", "routes/http-streaming.tsx"),
 	route("http-streaming-initiate", "routes/http-streaming-initiate.tsx"),
 	route("http-direct", "routes/http-direct.tsx"),
+	route("object-streaming", "routes/object-streaming.tsx"),
+	route("generative-ui", "routes/generative-user-interface.tsx"),
 ] satisfies RouteConfig;

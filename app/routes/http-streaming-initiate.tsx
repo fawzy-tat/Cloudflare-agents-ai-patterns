@@ -10,10 +10,26 @@ import {
   CardContent,
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Separator } from "~/components/ui/separator";
-import { ArrowLeft, Send, Sparkles, Terminal, Info, Zap } from "lucide-react";
+import {
+  ArrowLeft,
+  Plane,
+  Sparkles,
+  Terminal,
+  Info,
+  MousePointer2,
+  MapPin,
+  Zap,
+} from "lucide-react";
 import { cn } from "~/lib/utils";
+import { Combobox, type ComboboxItem } from "~/components/ui/combobox";
+import { cities } from "~/constants/cities";
+
+// Transform cities array into combobox items
+const cityItems: ComboboxItem[] = cities.map((city) => ({
+  value: `${city.name}, ${city.country}`,
+  label: city.name,
+  sublabel: city.country,
+}));
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -37,7 +53,7 @@ export default function HttpStreamingInitiatePage() {
 
   // Generate ID once on page load
   const [sessionId] = useState<string>(() => generateId());
-  const [prompt, setPrompt] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
   // Use Vercel AI SDK's useCompletion hook
   const { completion, complete, isLoading, error } = useCompletion({
@@ -47,11 +63,12 @@ export default function HttpStreamingInitiatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || isLoading) return;
+    if (!selectedCity.trim() || isLoading) return;
 
-    await complete(prompt.trim(), {
+    // Send city to backend (prompt constructed server-side)
+    await complete("", {
       body: {
-        prompt: prompt.trim(),
+        city: selectedCity,
         userId: sessionId,
       },
     });
@@ -63,81 +80,106 @@ export default function HttpStreamingInitiatePage() {
   }, [completion]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b-2 border-stone-800 bg-white/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="hover:bg-muted"
+              className="hover:bg-stone-100 border-2 border-transparent hover:border-stone-300 rounded-xl"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-semibold flex items-center gap-2">
-                <span className="text-purple-500">
-                  <Zap className="w-5 h-5 fill-current" />
+              <h1 className="font-display text-2xl text-stone-800 flex items-center gap-2">
+                <span className="w-8 h-8 bg-rose-500 border-2 border-stone-800 rounded-lg flex items-center justify-center shadow-[2px_2px_0_#2D2A26]">
+                  <MousePointer2 className="w-4 h-4 text-white" />
                 </span>
-                Direct RPC Method
+                Custom Agent Methods
               </h1>
-              <p className="text-muted-foreground text-xs">
-                Pattern 3: Custom Method Invocation
+              <p className="font-body text-stone-500 text-sm">
+                Pattern 3: Calling custom agent methods directly (RPC)
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge
-              variant="outline"
-              className="border-purple-500/20 text-purple-600 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-900/20"
-            >
+            <span className="inline-flex items-center bg-rose-100 border border-rose-300 text-rose-700 rounded-full px-3 py-1 font-body text-xs shadow-[1px_1px_0_#A09A92]">
               {agent === "research" ? "Research Agent" : "Support Agent"}
-            </Badge>
-            <Badge variant="secondary" className="font-mono text-xs">
+            </span>
+            <span className="inline-flex items-center bg-stone-100 border border-stone-300 text-stone-600 rounded-full px-3 py-1 font-mono text-xs shadow-[1px_1px_0_#A09A92]">
               ID: {sessionId}
-            </Badge>
+            </span>
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         {/* Input Area */}
-        <Card className="border-purple-500/20 bg-purple-50/10 dark:bg-purple-900/5 shadow-sm">
+        <Card className="bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              Prompt the Agent
+            <CardTitle className="font-display text-xl text-stone-800 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-rose-500" />
+              Plan Your Trip
             </CardTitle>
+            <CardDescription className="font-body text-stone-500">
+              Select a destination and we'll help you plan the perfect trip
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g., Plan a trip to Tokyo - I need weather, flights, and hotels"
-                className="w-full min-h-[120px] p-4 rounded-lg border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500/50 transition-all text-sm"
+              <Combobox
+                items={cityItems}
+                value={selectedCity}
+                onValueChange={setSelectedCity}
                 disabled={isLoading}
+                accentColor="purple"
+                placeholder="Select a city..."
+                searchPlaceholder="Search cities..."
+                emptyText="No city found."
+                label="Destination"
+                icon={
+                  <MapPin
+                    className={cn(
+                      "h-5 w-5",
+                      selectedCity ? "text-stone-800" : "text-stone-400"
+                    )}
+                  />
+                }
               />
+
+              {selectedCity && (
+                <div className="p-4 rounded-xl bg-rose-50 border-2 border-dashed border-rose-300">
+                  <p className="font-body text-sm text-stone-700">
+                    <span className="font-semibold">Trip plan:</span> We'll
+                    research weather, news, and travel advisories for{" "}
+                    <span className="font-semibold text-rose-700">
+                      {selectedCity}
+                    </span>
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+                <p className="font-body text-xs text-stone-500">
                   Reload page for a new session ID
                 </p>
                 <Button
                   type="submit"
-                  disabled={!prompt.trim() || isLoading}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={!selectedCity.trim() || isLoading}
+                  className="bg-rose-500 hover:bg-rose-600 text-white font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26] hover:shadow-[2px_2px_0_#2D2A26] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                 >
                   {isLoading ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Streaming...
+                      Planning...
                     </>
                   ) : (
                     <>
-                      Send Message
-                      <Send className="w-4 h-4 ml-2" />
+                      <Plane className="w-4 h-4 mr-2" />
+                      Start Planning
                     </>
                   )}
                 </Button>
@@ -147,36 +189,36 @@ export default function HttpStreamingInitiatePage() {
         </Card>
 
         {/* Response Area */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground px-1">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg text-stone-800 px-1">
             Agent Response
           </h2>
           <Card
             className={cn(
-              "min-h-[300px] transition-colors",
+              "min-h-[300px] bg-white border-2 rounded-2xl transition-all",
               isLoading
-                ? "border-purple-500/40 shadow-[0_0_15px_-3px_rgba(168,85,247,0.15)]"
-                : "border-border"
+                ? "border-rose-500 shadow-[4px_4px_0_#C73E4B]"
+                : "border-stone-800 shadow-[4px_4px_0_#2D2A26]"
             )}
           >
             <CardContent className="p-6">
               {error && (
-                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive mb-4 text-sm">
+                <div className="p-4 bg-rose-50 border-2 border-dashed border-rose-300 rounded-xl text-rose-700 mb-4 font-body text-sm">
                   {error.message}
                 </div>
               )}
 
               {completion ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <div className="whitespace-pre-wrap leading-relaxed">
+                <div className="prose prose-sm max-w-none font-body">
+                  <div className="whitespace-pre-wrap leading-relaxed text-stone-700">
                     {completion}
                   </div>
                   <div ref={messagesEndRef} />
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 py-12">
-                  <Terminal className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm">
+                <div className="h-full flex flex-col items-center justify-center text-stone-400 py-12">
+                  <Terminal className="w-12 h-12 mb-4 opacity-30" />
+                  <p className="font-body text-sm">
                     Response will stream here via RPC Method
                   </p>
                 </div>
@@ -187,43 +229,41 @@ export default function HttpStreamingInitiatePage() {
 
         {/* Technical Details */}
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="bg-muted/30 border-dashed">
+          <Card className="bg-stone-100 border-2 border-dashed border-stone-400 rounded-2xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <CardTitle className="font-body text-sm font-semibold uppercase tracking-wider text-stone-600 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 Under the hood
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-md bg-background/50 border">
-                <Badge
-                  variant="outline"
-                  className="mt-0.5 bg-purple-50/50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800"
-                >
+            <CardContent className="font-body text-sm text-stone-600 space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-stone-300">
+                <span className="inline-flex items-center bg-rose-100 border border-rose-300 text-rose-700 rounded-full px-2 py-0.5 text-xs font-semibold">
                   Client
-                </Badge>
+                </span>
                 <p>
                   Using{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     useCompletion()
                   </code>{" "}
                   to POST to{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     /api/research/initiate
                   </code>
                   .
                 </p>
               </div>
-              <div className="flex items-start gap-3 p-3 rounded-md bg-background/50 border">
-                <Badge
-                  variant="outline"
-                  className="mt-0.5 bg-purple-50/50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800"
-                >
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-white border border-stone-300">
+                <span className="inline-flex items-center bg-rose-100 border border-rose-300 text-rose-700 rounded-full px-2 py-0.5 text-xs font-semibold">
                   Server
-                </Badge>
+                </span>
                 <p>
-                  Endpoint calls{" "}
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                  Endpoint constructs prompt from{" "}
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
+                    city
+                  </code>{" "}
+                  and calls{" "}
+                  <code className="text-xs bg-stone-200 px-1.5 py-0.5 rounded border border-stone-300">
                     agent.initiateAgent(prompt)
                   </code>{" "}
                   directly as an RPC method.
@@ -232,27 +272,27 @@ export default function HttpStreamingInitiatePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-purple-50/10 dark:bg-purple-900/5 border-purple-500/20">
+          <Card className="bg-rose-50 border-2 border-rose-300 rounded-2xl shadow-[3px_3px_0_#C73E4B]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-2">
+              <CardTitle className="font-body text-sm font-semibold uppercase tracking-wider text-rose-700 flex items-center gap-2">
                 <Zap className="w-4 h-4" />
                 Key Difference
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm space-y-3">
-              <p className="text-muted-foreground">
+            <CardContent className="font-body text-sm space-y-3">
+              <p className="text-stone-600">
                 Instead of relying on the default{" "}
-                <code className="text-xs bg-muted px-1 py-0.5 rounded border">
+                <code className="text-xs bg-white px-1.5 py-0.5 rounded border border-stone-300">
                   onRequest()
                 </code>{" "}
                 handler, this pattern invokes a specific method on the agent
                 class.
               </p>
-              <div className="p-3 rounded-md bg-purple-50/50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                <span className="font-semibold text-xs text-purple-600 dark:text-purple-400 block mb-1">
+              <div className="p-3 rounded-xl bg-white border-2 border-rose-200">
+                <span className="font-semibold text-xs text-rose-600 block mb-1">
                   RPC Call
                 </span>
-                <code className="text-xs">agent.customMethod()</code>
+                <code className="text-xs font-mono">agent.customMethod()</code>
               </div>
             </CardContent>
           </Card>

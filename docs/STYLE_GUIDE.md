@@ -1,146 +1,497 @@
 # Style Guide & UI Patterns
 
-This document outlines the design system and UI patterns used in the Cloudflare Agents + Vercel AI SDK Demo project. We use [shadcn/ui](https://ui.shadcn.com/) components with Tailwind CSS for styling.
+This document outlines the design system and UI patterns used in the Cloudflare Agents + Vercel AI SDK Demo project. The design is inspired by **hand-drawn sketch illustrations** with a warm, approachable, and educational aesthetic.
 
-## Color System
+---
 
-We use specific color themes to differentiate between the integration patterns. These colors are applied to badges, borders, backgrounds, and icons.
+## Design Philosophy
 
-| Pattern            | Theme Color | Tailwind Class | Usage                                |
-| :----------------- | :---------- | :------------- | :----------------------------------- |
-| **WebSocket**      | Blue        | `blue`         | Real-time, bidirectional connections |
-| **HTTP Streaming** | Orange      | `orange`       | REST API standard streaming          |
-| **RPC Method**     | Purple      | `purple`       | Direct method invocation (RPC)       |
-| **HTTP Direct**    | Emerald     | `emerald`      | Auto-routed direct access            |
+Our design language emphasizes:
 
-### Implementation Reference
+- **Hand-drawn warmth**: Slightly imperfect, human-feeling visuals
+- **Educational clarity**: Clear visual hierarchies for learning
+- **Playful professionalism**: Friendly but technically credible
+- **Seamless illustration integration**: UI that complements sketch-style diagrams
 
-When applying these themes, use the following transparency levels for consistency:
+---
 
-- **Borders**: `border-{color}-500/20` (e.g., `border-blue-500/20`)
-- **Backgrounds (Light)**: `bg-{color}-50/50` or `bg-{color}-50/10`
-- **Backgrounds (Dark)**: `bg-{color}-900/20` or `bg-{color}-900/5`
-- **Text**: `text-{color}-600` (Light) / `text-{color}-400` (Dark)
-- **Icons**: `text-{color}-500`
+## Color Palette
+
+### Primary Colors
+
+| Color Name        | Hex Value | CSS Variable   | Usage                                 |
+| :---------------- | :-------- | :------------- | :------------------------------------ |
+| **Cream**         | `#FAF8F5` | `--cream`      | Primary background                    |
+| **Warm White**    | `#FFFEF9` | `--warm-white` | Card backgrounds                      |
+| **Golden Yellow** | `#F5A623` | `--golden`     | Connection pipes, highlights, accents |
+| **Amber**         | `#E8941A` | `--amber`      | Hover states, darker accent           |
+
+### Accent Colors
+
+| Color Name     | Hex Value | CSS Variable    | Usage                          |
+| :------------- | :-------- | :-------------- | :----------------------------- |
+| **Crimson**    | `#C73E4B` | `--crimson`     | CTA buttons, important actions |
+| **Rust Red**   | `#9B3344` | `--rust`        | Hover states for crimson       |
+| **Soft Coral** | `#F4D4C8` | `--coral-light` | Subtle highlights              |
+
+### Neutral Colors
+
+| Color Name     | Hex Value | CSS Variable   | Usage                  |
+| :------------- | :-------- | :------------- | :--------------------- |
+| **Charcoal**   | `#2D2A26` | `--charcoal`   | Primary text, outlines |
+| **Warm Gray**  | `#6B6560` | `--warm-gray`  | Secondary text         |
+| **Stone**      | `#A09A92` | `--stone`      | Muted text, borders    |
+| **Cloud Gray** | `#E8E4DF` | `--cloud`      | Card fills, dividers   |
+| **Cream Dark** | `#F0EBE3` | `--cream-dark` | Subtle backgrounds     |
+
+### Pattern Theme Colors
+
+Each integration pattern has a dedicated color for visual differentiation:
+
+| Pattern             | Primary   | Light BG  | Usage                    |
+| :------------------ | :-------- | :-------- | :----------------------- |
+| **WebSocket**       | `#F5A623` | `#FEF7E6` | Bidirectional, real-time |
+| **HTTP Middleware** | `#F5A623` | `#FEF7E6` | Standard streaming       |
+| **RPC Methods**     | `#C73E4B` | `#FCEBED` | Custom method calls      |
+| **Zero-Config**     | `#F5A623` | `#FEF7E6` | Simple auto-routing      |
+
+---
+
+## Typography
+
+### Font Stack
+
+```css
+--font-display: "Caveat", "Permanent Marker", cursive; /* Headings, labels */
+--font-body: "Nunito", "Quicksand", sans-serif; /* Body text */
+--font-mono: "JetBrains Mono", "Fira Code", monospace; /* Code snippets */
+```
+
+### Type Scale
+
+| Element           | Font    | Size             | Weight | Style                    |
+| :---------------- | :------ | :--------------- | :----- | :----------------------- |
+| **Page Title**    | Display | 2rem (32px)      | 700    | Slightly rotated (-1deg) |
+| **Section Title** | Display | 1.5rem (24px)    | 600    | Normal                   |
+| **Card Title**    | Body    | 1.125rem (18px)  | 600    | Normal                   |
+| **Body**          | Body    | 0.9375rem (15px) | 400    | Normal                   |
+| **Small/Caption** | Body    | 0.8125rem (13px) | 400    | Normal                   |
+| **Code**          | Mono    | 0.8125rem (13px) | 500    | Normal                   |
+
+### Heading Styles
+
+Headings should feel hand-written. Apply subtle transforms for organic feel:
+
+```css
+.sketch-heading {
+  font-family: var(--font-display);
+  transform: rotate(-0.5deg);
+  letter-spacing: -0.02em;
+}
+```
+
+---
+
+## Border & Shadow Styles
+
+### Sketch Borders
+
+Borders should appear hand-drawn with slight irregularity:
+
+```css
+/* Standard sketch border */
+.sketch-border {
+  border: 2px solid var(--charcoal);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--charcoal);
+}
+
+/* Lighter sketch border for cards */
+.sketch-border-light {
+  border: 2px solid var(--cloud);
+  border-radius: 16px;
+  box-shadow: 2px 2px 0 var(--cloud);
+}
+```
+
+### Shadow Styles
+
+Shadows should be offset and solid (not blurred) for the sketch aesthetic:
+
+```css
+/* Hard offset shadow */
+.sketch-shadow {
+  box-shadow: 4px 4px 0 var(--charcoal);
+}
+
+/* Colored accent shadow */
+.sketch-shadow-golden {
+  box-shadow: 4px 4px 0 var(--golden);
+}
+
+/* Lifted/hover state */
+.sketch-shadow-lifted {
+  box-shadow: 6px 6px 0 var(--charcoal);
+  transform: translate(-2px, -2px);
+}
+```
+
+---
 
 ## Component Patterns
 
-### 1. Page Header
+### 1. Pattern Cards (Main Feature)
 
-Standard layout for all route pages.
+Cards representing integration patterns should feel like hand-drawn frames:
 
 ```tsx
-<header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-  <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-    <div className="flex items-center gap-4">
-      <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-        <ArrowLeft className="w-5 h-5" />
-      </Button>
-      <div>
-        <h1 className="text-xl font-semibold flex items-center gap-2">
-          <span className="text-{color}-500">{ICON}</span>
-          {PAGE_TITLE}
-        </h1>
-        <p className="text-muted-foreground text-xs">{SUBTITLE}</p>
-      </div>
+<div
+  className="
+  relative bg-warm-white 
+  border-2 border-charcoal 
+  rounded-2xl 
+  shadow-[4px_4px_0_theme(colors.charcoal)]
+  hover:shadow-[6px_6px_0_theme(colors.charcoal)]
+  hover:-translate-x-0.5 hover:-translate-y-0.5
+  transition-all duration-200
+  overflow-hidden
+"
+>
+  {/* Pattern number badge - rounded circle */}
+  <div
+    className="
+    absolute -top-3 -left-3 
+    w-10 h-10 
+    bg-golden 
+    border-2 border-charcoal 
+    rounded-full 
+    flex items-center justify-center
+    font-display font-bold text-charcoal
+    shadow-[2px_2px_0_theme(colors.charcoal)]
+  "
+  >
+    1
+  </div>
+
+  {/* Card content */}
+  <div className="p-6 pt-8">
+    <h3 className="font-display text-2xl text-charcoal">WebSocket Streaming</h3>
+    {/* ... */}
+  </div>
+</div>
+```
+
+### 2. Connection Flow Diagrams
+
+Visual flow indicators should mimic the golden pipes from the illustration:
+
+```tsx
+<div
+  className="
+  flex items-center gap-2
+  bg-golden/20
+  border-2 border-golden
+  rounded-full
+  px-4 py-2
+"
+>
+  <span className="bg-warm-white border-2 border-charcoal rounded-lg px-3 py-1 font-mono text-sm">
+    useAgent
+  </span>
+  <ArrowRight className="text-charcoal" />
+  <span className="bg-warm-white border-2 border-charcoal rounded-lg px-3 py-1 font-mono text-sm">
+    /agents/:agent/:id
+  </span>
+  <ArrowRight className="text-charcoal" />
+  <span className="bg-warm-white border-2 border-charcoal rounded-lg px-3 py-1 font-mono text-sm">
+    onMessage()
+  </span>
+</div>
+```
+
+### 3. Node Elements (Frontend/Agent)
+
+Cloud-like shapes for nodes:
+
+```tsx
+<div
+  className="
+  relative
+  bg-cloud 
+  border-2 border-charcoal 
+  rounded-[32px]
+  px-6 py-4
+  shadow-[3px_3px_0_theme(colors.charcoal)]
+"
+>
+  {/* Robot face icon */}
+  <div
+    className="
+    w-8 h-8 rounded-full 
+    bg-warm-white border-2 border-charcoal
+    flex items-center justify-center
+  "
+  >
+    <Bot className="w-5 h-5 text-charcoal" />
+  </div>
+  <span className="font-display text-sm text-charcoal uppercase tracking-wide">
+    Agent Node
+  </span>
+</div>
+```
+
+### 4. Tags/Badges (Pill Style)
+
+Rounded pill badges like in the illustration:
+
+```tsx
+<span
+  className="
+  inline-flex items-center
+  bg-cream-dark
+  border border-stone
+  rounded-full
+  px-3 py-1
+  font-body text-xs text-warm-gray
+  shadow-[1px_1px_0_theme(colors.stone)]
+"
+>
+  Real-time Chat
+</span>
+```
+
+### 5. Action Buttons
+
+Primary CTA buttons should use the crimson accent:
+
+```tsx
+{
+  /* Primary action - Crimson */
+}
+<button
+  className="
+  bg-crimson 
+  text-warm-white
+  border-2 border-charcoal
+  rounded-xl
+  px-6 py-3
+  font-body font-semibold
+  shadow-[4px_4px_0_theme(colors.charcoal)]
+  hover:shadow-[2px_2px_0_theme(colors.charcoal)]
+  hover:translate-x-0.5 hover:translate-y-0.5
+  active:shadow-none
+  active:translate-x-1 active:translate-y-1
+  transition-all duration-150
+"
+>
+  Try Pattern
+</button>;
+
+{
+  /* Secondary action - Golden */
+}
+<button
+  className="
+  bg-golden 
+  text-charcoal
+  border-2 border-charcoal
+  rounded-xl
+  px-6 py-3
+  font-body font-semibold
+  shadow-[4px_4px_0_theme(colors.charcoal)]
+  hover:shadow-[2px_2px_0_theme(colors.charcoal)]
+  hover:translate-x-0.5 hover:translate-y-0.5
+  transition-all duration-150
+"
+>
+  Learn More
+</button>;
+```
+
+### 6. Page Header
+
+```tsx
+<header
+  className="
+  bg-cream
+  border-b-2 border-charcoal
+  sticky top-0 z-10
+"
+>
+  <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 className="font-display text-3xl text-charcoal transform -rotate-1">
+        Agent Integration Patterns
+      </h1>
+      <p className="font-body text-warm-gray mt-1">
+        Four architectural approaches for AI agents
+      </p>
     </div>
-    {/* Right side: Badges */}
-    <div className="flex items-center gap-3">
-      <Badge variant="outline" className="...">
-        Agent Type
-      </Badge>
-      <Badge variant="secondary" className="font-mono text-xs">
-        ID: {sessionId}
-      </Badge>
-    </div>
+    <div className="flex items-center gap-3">{/* Stack badges */}</div>
   </div>
 </header>
 ```
 
-### 2. Input Card
+---
 
-The prompt input area uses a colored border and subtle background tint to match the page theme.
+## Illustrations Integration
 
-```tsx
-<Card className="border-{color}-500/20 bg-{color}-50/10 dark:bg-{color}-900/5 shadow-sm">
-  <CardHeader>
-    <CardTitle className="text-base flex items-center gap-2">
-      <Sparkles className="w-4 h-4 text-{color}-500" />
-      Prompt the Agent
-    </CardTitle>
-  </CardHeader>
-  <CardContent>{/* Input Form */}</CardContent>
-</Card>
+### Background Treatment
+
+The background should feel like paper/notebook:
+
+```css
+.paper-bg {
+  background-color: var(--cream);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--stone) 1px,
+    transparent 0
+  );
+  background-size: 24px 24px;
+}
 ```
 
-### 3. Response Card
+### Image Containers
 
-Displays the agent's output. It changes state when streaming.
-
-- **Idle**: Standard `border-border`
-- **Streaming**: Colored border + shadow glow
-  - Class: `border-{color}-500/40 shadow-[0_0_15px_-3px_rgba(R,G,B,0.15)]`
-
-### 4. Technical Details ("Under the hood")
-
-A dashed-border card used to explain technical implementation details.
+When embedding sketch illustrations:
 
 ```tsx
-<Card className="bg-muted/30 border-dashed">
-  <CardHeader className="pb-3">
-    <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-      <Info className="w-4 h-4" />
-      Under the hood
-    </CardTitle>
-  </CardHeader>
-  <CardContent className="text-sm text-muted-foreground space-y-3">
-    {/* Content Steps */}
-  </CardContent>
-</Card>
+<div
+  className="
+  bg-warm-white
+  border-2 border-charcoal
+  rounded-2xl
+  p-4
+  shadow-[4px_4px_0_theme(colors.charcoal)]
+"
+>
+  <img
+    src="/images/diagram.png"
+    alt="Architecture diagram"
+    className="w-full rounded-lg"
+  />
+</div>
 ```
 
-### 5. Inline Code Snippets
+---
 
-For highlighting code within text descriptions.
+## Animation Guidelines
 
-```tsx
-<code className="text-xs bg-muted px-1 py-0.5 rounded border">
-  functionName()
-</code>
+Keep animations subtle and playful:
+
+```css
+/* Hover lift effect */
+.hover-lift {
+  transition: all 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--charcoal);
+}
+
+/* Gentle wiggle for emphasis */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+.wiggle {
+  animation: wiggle 0.3s ease-in-out;
+}
+
+/* Bounce for CTAs */
+@keyframes gentle-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
 ```
 
-## Typography
-
-- **Headings**: `font-semibold tracking-tight`
-- **Subtitles**: `text-muted-foreground text-xs` or `text-sm`
-- **Monospace**: `font-mono text-xs` (for IDs, endpoints, code)
-- **Body Text**: `text-sm leading-relaxed`
+---
 
 ## Icons
 
-We use [Lucide React](https://lucide.dev/icons/) icons. Emojis should **not** be used in the UI; always prefer icons for visual cues.
+Use [Lucide React](https://lucide.dev/icons/) with consistent sizing and the charcoal color.
 
-- **Common Icons**:
-  - `ArrowLeft`: Back navigation
-  - `Send`: Submit button
-  - `Sparkles`: Input section header
-  - `Terminal`: Empty state placeholder
-  - `Info`: Technical details section
-  - `Zap`: Comparison / Key features
-  - `RefreshCw`: Reload / Reset actions
+| Context          | Size       | Stroke Width |
+| :--------------- | :--------- | :----------- |
+| Inline with text | 16px (w-4) | 2            |
+| Card headers     | 20px (w-5) | 2            |
+| Feature icons    | 24px (w-6) | 1.5          |
+| Hero elements    | 32px (w-8) | 1.5          |
 
-## UX Patterns
+### Common Icons
 
-1. **Streaming State**:
+- `Bot` - Agent nodes
+- `Monitor` - Frontend nodes
+- `ArrowRight` - Flow connections
+- `Zap` - WebSocket/real-time
+- `Lock` - Authentication/middleware
+- `MousePointer` - Custom methods/RPC
+- `Sparkles` - AI/magic features
 
-   - Disable input while streaming.
-   - Show spinner in button.
-   - Show "Streaming..." indicator in response card (optional).
-   - Auto-scroll to bottom of response.
+---
 
-2. **Empty States**:
+## Responsive Design
 
-   - Use a centered icon + helper text in the response area when no data exists.
+### Breakpoints
 
-3. **Feedback**:
-   - Show error messages in a `destructive` colored alert box within the response area.
+```css
+sm: 640px   /* Mobile landscape */
+md: 768px   /* Tablet */
+lg: 1024px  /* Desktop */
+xl: 1280px  /* Large desktop */
+```
+
+### Mobile Adaptations
+
+- Reduce shadow offsets from 4px to 2px
+- Stack flow diagrams vertically
+- Increase touch targets to 44px minimum
+- Simplify card layouts to single column
+
+---
+
+## Dark Mode Considerations
+
+While the primary aesthetic is light/paper-like, dark mode should feel like a chalkboard:
+
+```css
+.dark {
+  --cream: #1c1917; /* Stone 900 */
+  --warm-white: #292524; /* Stone 800 */
+  --charcoal: #fafaf9; /* Stone 50 */
+  --cloud: #44403c; /* Stone 700 */
+  --golden: #fcd34d; /* Amber 300 */
+  --crimson: #fb7185; /* Rose 400 */
+}
+```
+
+---
+
+## Do's and Don'ts
+
+### Do ✓
+
+- Use hard offset shadows (no blur)
+- Apply slight rotations to headings
+- Keep rounded corners generous (12-24px)
+- Use the golden/amber for highlighting connections
+- Maintain the warm, papery color palette
+
+### Don't ✗
+
+- Use gradient backgrounds
+- Apply drop shadows with blur
+- Use sharp corners (< 8px radius)
+- Mix in cold blues or grays
+- Overuse the crimson accent

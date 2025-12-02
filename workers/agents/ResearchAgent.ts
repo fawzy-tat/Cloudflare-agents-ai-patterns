@@ -6,23 +6,43 @@ import { openai } from "@ai-sdk/openai";
 
 import { tools } from "workers/tools";
 export class ResearchAgent extends Agent<Env> {
-    // Vercel Agent instance with travel planning tools
+    // Vercel Agent instance with travel planning and news research tools
     private createVercelAgent() {
         return new VercelAgent({
-            model: openai('gpt-4o-2024-11-20'),
-            system: 'You are a travel planning assistant. Help users plan their trips by providing weather information, flight options, and hotel recommendations.',
-            tools: tools as ToolSet,
-            stopWhen: stepCountIs(5)
+            // for some reason gpt 5 wasn't good with the tools, so we're using gpt 4o
+            model: openai('gpt-5-nano'),
+            system:
+                `
+            You are a research and travel planning assistant.
+            Help users with travel planning (weather, news) about a specific country.
+            You MUST use all the available tools to answer questions.
+            Based on these recent headlines about the given city or country, assess travel safety focusing on security, health, political stability, and natural disasters.
+            Return your assessment in a concise and actionable format 3 lines max, including any recommendations for the user.
+            `,
+            tools: {
+                getWeatherTool: tools.getWeatherTool,
+                getNewsTool: tools.getNewsTool(this.env),
+            } as ToolSet,
+            stopWhen: stepCountIs(5),
+            onStepFinish: (step) => {
+                console.log('Step finished:');
+            }
         });
     }
 
     /**
      * HTTP Request Handler - Used by Vercel AI SDK endpoints (useChat/useCompletion)
      * Returns a streaming text response
+     * 
+     * Accepts either:
+     * - { prompt } - full prompt (from /api/research route)
+     * - { city } - city selection (from /agents/* direct route)
      */
     async onRequest(request: Request) {
-        const { prompt } = await request.json<{ prompt: string }>();
-        const userPrompt = prompt || "Plan a trip to Paris - I need weather, flights, and hotels";
+        const { prompt, city } = await request.json<{ prompt?: string; city?: string }>();
+
+        // Use prompt if provided and non-empty, otherwise build from city
+        const userPrompt = prompt && prompt.trim() ? prompt : `Plan a trip to ${city}`;
 
         const vercelAgent = this.createVercelAgent();
         const result = vercelAgent.stream({ prompt: userPrompt });
@@ -33,13 +53,18 @@ export class ResearchAgent extends Agent<Env> {
     /**
      * WebSocket Message Handler - Used by useAgent hook
      * Streams responses back through the WebSocket connection
+     * 
+     * Expects { city } - builds the user prompt from the selected city
      */
     async onMessage(connection: Connection, message: string) {
         try {
-            const { prompt } = JSON.parse(message) as { prompt: string };
+            const { city } = JSON.parse(message) as { city: string };
+
+            // Build user prompt from city selection
+            const userPrompt = `Plan a trip to ${city}`;
 
             const vercelAgent = this.createVercelAgent();
-            const result = vercelAgent.stream({ prompt });
+            const result = vercelAgent.stream({ prompt: userPrompt });
 
             // Stream chunks back through WebSocket
             for await (const chunk of result.textStream) {
@@ -66,12 +91,12 @@ export class ResearchAgent extends Agent<Env> {
      * Both return a Response (required for serialization across DO boundary),
      * but this demonstrates that you can create custom named methods on your agent
      * that can be called directly from your API routes.
+     * 
+     * Expects prompt - the user prompt is constructed by the API route in app.ts
      */
     initiateAgent(prompt: string): Response {
-        const userPrompt = prompt || "Plan a trip to Paris - I need weather, flights, and hotels";
-
         const vercelAgent = this.createVercelAgent();
-        const result = vercelAgent.stream({ prompt: userPrompt });
+        const result = vercelAgent.stream({ prompt });
 
         // Must return Response (serializable) - can't return StreamTextResult across DO boundary
         return result.toTextStreamResponse();

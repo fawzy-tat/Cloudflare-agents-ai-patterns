@@ -123,9 +123,17 @@ I built this project so you don't have to debug these issues yourself. Every pat
 
 ## The Four Integration Patterns
 
-This project demonstrates four distinct ways to connect your frontend to AI agents. Each pattern has legitimate use cases—there's no single "right" answer.
+This project demonstrates four distinct ways to connect your frontend to AI agents, organized by transport type and complexity. Each pattern has legitimate use cases—there's no single "right" answer.
 
-### Pattern 1: WebSocket Real-time (useAgent)
+---
+
+### 🔌 WebSocket Patterns
+
+Persistent bidirectional connections for real-time communication.
+
+---
+
+### Pattern 1: WebSocket Streaming
 
 **Frontend**: [`app/routes/direct-agent.tsx`](./app/routes/direct-agent.tsx)  
 **Backend**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onMessage()`  
@@ -151,7 +159,36 @@ for await (const chunk of result.textStream) {
 
 ---
 
-### Pattern 2: HTTP Streaming via API Route (useCompletion → onRequest)
+### 🌐 HTTP Patterns
+
+Request-response streaming, ordered from simplest to most flexible.
+
+---
+
+### Pattern 2: Zero-Config HTTP
+
+**Frontend**: [`app/routes/http-direct.tsx`](./app/routes/http-direct.tsx)  
+**Backend**: Auto-handled by `routeAgentRequest()` in [`workers/app.ts`](./workers/app.ts)  
+**Agent Handler**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onRequest()`  
+**Hook**: `useCompletion()` from `@ai-sdk/react`
+
+Frontend points directly to the agent URL pattern:
+
+```typescript
+const { completion, complete } = useCompletion({
+  api: `/agents/${agentName}/${sessionId}`,
+  streamProtocol: "text",
+});
+```
+
+No custom Hono route needed—`routeAgentRequest()` handles everything.
+
+**When to use**: Simplest setup, prototyping, MVPs  
+**Trade-offs**: Less middleware control, direct endpoint exposure
+
+---
+
+### Pattern 3: HTTP with Middleware
 
 **Frontend**: [`app/routes/http-streaming.tsx`](./app/routes/http-streaming.tsx)  
 **Backend**: [`workers/app.ts`](./workers/app.ts) → `/api/research` route  
@@ -182,7 +219,7 @@ return agent.fetch(agentRequest);
 
 ---
 
-### Pattern 3: Direct RPC Method Invocation (useCompletion → custom method)
+### Pattern 4: Custom Agent Methods
 
 **Frontend**: [`app/routes/http-streaming-initiate.tsx`](./app/routes/http-streaming-initiate.tsx)  
 **Backend**: [`workers/app.ts`](./workers/app.ts) → `/api/research/initiate` route  
@@ -209,29 +246,6 @@ initiateAgent(prompt: string): Response {
 
 ---
 
-### Pattern 4: Auto-Routed Direct Access (useCompletion → /agents/\*)
-
-**Frontend**: [`app/routes/http-direct.tsx`](./app/routes/http-direct.tsx)  
-**Backend**: Auto-handled by `routeAgentRequest()` in [`workers/app.ts`](./workers/app.ts)  
-**Agent Handler**: [`workers/agents/ResearchAgent.ts`](./workers/agents/ResearchAgent.ts) → `onRequest()`  
-**Hook**: `useCompletion()` from `@ai-sdk/react`
-
-Frontend points directly to the agent URL pattern:
-
-```typescript
-const { completion, complete } = useCompletion({
-  api: `/agents/${agentName}/${sessionId}`,
-  streamProtocol: "text",
-});
-```
-
-No custom Hono route needed—`routeAgentRequest()` handles everything.
-
-**When to use**: Simplest setup, prototyping, MVPs  
-**Trade-offs**: Less middleware control, direct endpoint exposure
-
----
-
 ## Project Structure
 
 ```
@@ -246,10 +260,10 @@ cf-hono-rr7-agents/
 ├── app/
 │   ├── routes/
 │   │   ├── home.tsx              # Landing page with pattern overview
-│   │   ├── direct-agent.tsx      # Pattern 1: WebSocket
-│   │   ├── http-streaming.tsx    # Pattern 2: HTTP via API route
-│   │   ├── http-streaming-initiate.tsx  # Pattern 3: RPC method
-│   │   └── http-direct.tsx       # Pattern 4: Auto-routed
+│   │   ├── direct-agent.tsx      # Pattern 1: WebSocket Streaming
+│   │   ├── http-direct.tsx       # Pattern 2: Zero-Config HTTP
+│   │   ├── http-streaming.tsx    # Pattern 3: HTTP with Middleware
+│   │   └── http-streaming-initiate.tsx  # Pattern 4: Custom Agent Methods
 │   ├── routes.ts                 # Route definitions
 │   └── components/ui/            # shadcn/ui components
 ├── docs/                         # Additional documentation
@@ -364,13 +378,13 @@ See the existing routes in [`workers/app.ts`](./workers/app.ts) for patterns on 
 
 | Scenario                              | Recommended Pattern              |
 | ------------------------------------- | -------------------------------- |
-| Real-time chat with typing indicators | Pattern 1 (WebSocket)            |
-| Simple completion forms               | Pattern 4 (Auto-routed HTTP)     |
-| API with authentication middleware    | Pattern 2 (Custom API route)     |
-| Multiple operations per agent         | Pattern 3 (RPC methods)          |
+| Real-time chat with typing indicators | Pattern 1 (WebSocket Streaming)  |
+| Rapid prototyping / MVPs              | Pattern 2 (Zero-Config HTTP)     |
+| Simple completion forms               | Pattern 2 (Zero-Config HTTP)     |
+| API with authentication middleware    | Pattern 3 (HTTP with Middleware) |
+| REST-only architecture                | Pattern 2 or 3 (HTTP patterns)   |
+| Multiple operations per agent         | Pattern 4 (Custom Agent Methods) |
 | Collaborative features                | Pattern 1 (WebSocket + setState) |
-| REST-only architecture                | Pattern 2 or 4 (HTTP)            |
-| Rapid prototyping                     | Pattern 4 (Auto-routed)          |
 
 ---
 
