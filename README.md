@@ -1,6 +1,6 @@
 # Building AI Agents on Cloudflare: A Practical Guide
 
-![Agent Integration Patterns](./public/images/menu.png)
+![Agent Integration Patterns](./public/images/cloudflare-agent-patterns.jpeg)
 
 The first time I got a Vercel AI Agent to stream a response through a Cloudflare Durable Object, I sat there watching the text flow in, chunk by chunk, and thought: _this is exactly how AI agents should be built_.
 
