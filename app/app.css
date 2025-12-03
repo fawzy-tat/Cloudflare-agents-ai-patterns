@@ -8,9 +8,6 @@
    Inspired by hand-drawn illustrations with warm, approachable aesthetics
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Font imports */
-@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
-
 @theme {
   /* Typography */
   --font-display: "Caveat", "Permanent Marker", cursive;
@@ -239,10 +236,10 @@ body {
 @layer utilities {
   /* Paper texture background */
   .paper-texture {
-    background-color: theme(colors.cream);
+    background-color: var(--color-cream);
     background-image: radial-gradient(
       circle at 1px 1px,
-      theme(colors.stone / 0.15) 1px,
+      oklch(from var(--color-stone) l c h / 0.15) 1px,
       transparent 0
     );
     background-size: 20px 20px;
@@ -250,23 +247,23 @@ body {
 
   /* Sketch shadows - hard offset, no blur */
   .sketch-shadow {
-    box-shadow: 4px 4px 0 theme(colors.charcoal);
+    box-shadow: 4px 4px 0 var(--color-charcoal);
   }
 
   .sketch-shadow-sm {
-    box-shadow: 2px 2px 0 theme(colors.charcoal);
+    box-shadow: 2px 2px 0 var(--color-charcoal);
   }
 
   .sketch-shadow-lg {
-    box-shadow: 6px 6px 0 theme(colors.charcoal);
+    box-shadow: 6px 6px 0 var(--color-charcoal);
   }
 
   .sketch-shadow-golden {
-    box-shadow: 4px 4px 0 theme(colors.golden);
+    box-shadow: 4px 4px 0 var(--color-golden);
   }
 
   .sketch-shadow-crimson {
-    box-shadow: 4px 4px 0 theme(colors.crimson);
+    box-shadow: 4px 4px 0 var(--color-crimson);
   }
 
   /* Sketch borders */
@@ -292,7 +289,7 @@ body {
 
   .hover-lift:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 theme(colors.charcoal);
+    box-shadow: 6px 6px 0 var(--color-charcoal);
   }
 
   /* Button press effect */
@@ -302,12 +299,12 @@ body {
 
   .press-effect:hover {
     transform: translate(1px, 1px);
-    box-shadow: 3px 3px 0 theme(colors.charcoal);
+    box-shadow: 3px 3px 0 var(--color-charcoal);
   }
 
   .press-effect:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 theme(colors.charcoal);
+    box-shadow: 2px 2px 0 var(--color-charcoal);
   }
 
   /* Display font utility */
@@ -383,18 +380,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: theme(colors.cream-dark);
+  background: var(--color-cream-dark);
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: theme(colors.stone);
+  background: var(--color-stone);
   border-radius: 8px;
-  border: 2px solid theme(colors.cream-dark);
+  border: 2px solid var(--color-cream-dark);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: theme(colors.warm-gray);
+  background: var(--color-warm-gray);
 }
 
 .dark::-webkit-scrollbar-track {

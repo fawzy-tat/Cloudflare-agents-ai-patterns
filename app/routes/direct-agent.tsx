@@ -147,6 +147,21 @@ export default function DirectAgentPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {/* Demo Notice */}
+        <div className="p-4 rounded-xl bg-sky-50 border-2 border-sky-200 shadow-[2px_2px_0_#7DD3FC]">
+          <div className="flex gap-3">
+            <Info className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
+            <div className="font-body text-sm text-stone-700 space-y-1">
+              <p className="font-semibold text-sky-800">Demo Notice</p>
+              <p>
+                This page demonstrates <span className="font-semibold">one of several methods</span> to communicate with a Cloudflare Agent from a React frontend. 
+                The backend uses <span className="font-semibold">Firecrawl</span> and other research tools to gather information, which may cause slower response times. 
+                Speed and performance optimization are separate considerations from the communication patterns shown here.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Input Area */}
         <Card className="bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
           <CardHeader>
