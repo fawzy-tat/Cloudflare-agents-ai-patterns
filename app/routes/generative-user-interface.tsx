@@ -143,7 +143,7 @@ export default function GenerativeUIPage() {
 // ============================================================================
 
 function GenerativeUIChatDemo() {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // AI SDK 5.x: Manage input state manually
   const [inputValue, setInputValue] = useState("");
@@ -159,7 +159,14 @@ function GenerativeUIChatDemo() {
   const isLoading = status === "streaming" || status === "submitted";
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Only scroll the chat container, not the entire page
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
@@ -229,7 +236,10 @@ function GenerativeUIChatDemo() {
           </div>
 
           {/* Chat Messages */}
-          <div className="h-[400px] overflow-y-auto border-2 border-stone-300 rounded-xl p-4 space-y-4 bg-stone-50">
+          <div
+            ref={messagesContainerRef}
+            className="h-[400px] overflow-y-auto border-2 border-stone-300 rounded-xl p-4 space-y-4 bg-stone-50"
+          >
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center text-stone-400">
                 <Bot className="w-12 h-12 mb-2 opacity-30" />
@@ -402,8 +412,6 @@ function GenerativeUIChatDemo() {
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {error && (
@@ -532,8 +540,12 @@ function StockCard({ stock }: { stock: StockOutput }) {
           <p className="font-body text-xs text-stone-500 uppercase tracking-wider">
             Stock
           </p>
-          <h4 className="font-display text-lg text-stone-800">{stock.symbol}</h4>
-          <p className="font-body text-sm text-stone-500">{stock.companyName}</p>
+          <h4 className="font-display text-lg text-stone-800">
+            {stock.symbol}
+          </h4>
+          <p className="font-body text-sm text-stone-500">
+            {stock.companyName}
+          </p>
         </div>
         {isUp ? (
           <TrendingUp className="w-8 h-8 text-emerald-500" />
