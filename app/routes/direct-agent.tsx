@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router";
+import { useSearchParams, useNavigate, isRouteErrorResponse } from "react-router";
 import { useAgent } from "agents/react";
 import type { Route } from "./+types/direct-agent";
+import { generateSessionId } from "~/lib/utils";
 import {
   Card,
   CardHeader,
@@ -38,18 +39,20 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 8);
+export function loader() {
+  return { sessionId: generateSessionId() };
 }
 
-export default function DirectAgentPage() {
+export default function DirectAgentPage({
+  loaderData,
+}: Route.ComponentProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const agent = searchParams.get("agent") || "research";
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Generate ID once on page load
-  const [sessionId] = useState<string>(() => generateId());
+  // Session ID from server loader
+  const { sessionId } = loaderData;
   const [selectedCity, setSelectedCity] = useState("");
   const [response, setResponse] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -325,6 +328,44 @@ export default function DirectAgentPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <Card className="max-w-md bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
+        <CardHeader>
+          <CardTitle className="font-display text-xl text-stone-800">
+            Something went wrong
+          </CardTitle>
+          <CardDescription className="font-body text-stone-500">
+            {isRouteErrorResponse(error)
+              ? `${error.status}: ${error.statusText}`
+              : error instanceof Error
+                ? error.message
+                : "An unexpected error occurred"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-3">
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-amber-400 hover:bg-amber-500 text-stone-800 font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26]"
+          >
+            Try Again
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="border-2 border-stone-800 rounded-xl"
+          >
+            Go Home
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, isRouteErrorResponse } from "react-router";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import type { Route } from "./+types/object-streaming";
 import {
@@ -819,6 +819,28 @@ function StatBadge({
 // Example 3: Classification (Enum)
 // ============================================================================
 
+// Sample texts moved outside component for performance
+const SAMPLE_TEXTS = {
+  sentiment: [
+    "I absolutely loved this product! Best purchase I've ever made!",
+    "It's okay, nothing special but gets the job done.",
+    "Terrible experience. Would not recommend to anyone.",
+    "Mixed feelings - great quality but shipping was slow.",
+  ],
+  genre: [
+    "A group of astronauts travel through a wormhole in search of a new habitable planet.",
+    "Two rival families in fair Verona where we lay our scene...",
+    "A serial killer sends taunting letters to the detective hunting him.",
+    "A young wizard discovers he has magical powers on his 11th birthday.",
+  ],
+  priority: [
+    "URGENT: Production server is down, affecting all customers!",
+    "Feature request: Would be nice to have dark mode.",
+    "Bug report: Button color looks slightly off on mobile.",
+    "Critical security vulnerability discovered in authentication system.",
+  ],
+} as const;
+
 function ClassifyExample() {
   const [classificationType, setClassificationType] = useState<
     "sentiment" | "genre" | "priority"
@@ -831,26 +853,7 @@ function ClassifyExample() {
     schema: classificationSchema,
   });
 
-  const sampleTexts = {
-    sentiment: [
-      "I absolutely loved this product! Best purchase I've ever made!",
-      "It's okay, nothing special but gets the job done.",
-      "Terrible experience. Would not recommend to anyone.",
-      "Mixed feelings - great quality but shipping was slow.",
-    ],
-    genre: [
-      "A group of astronauts travel through a wormhole in search of a new habitable planet.",
-      "Two rival families in fair Verona where we lay our scene...",
-      "A serial killer sends taunting letters to the detective hunting him.",
-      "A young wizard discovers he has magical powers on his 11th birthday.",
-    ],
-    priority: [
-      "URGENT: Production server is down, affecting all customers!",
-      "Feature request: Would be nice to have dark mode.",
-      "Bug report: Button color looks slightly off on mobile.",
-      "Critical security vulnerability discovered in authentication system.",
-    ],
-  };
+  const sampleTexts = SAMPLE_TEXTS;
 
   const handleClassify = () => {
     if (!inputText.trim()) return;
@@ -1139,5 +1142,47 @@ function SentimentClassifier() {
         </TabsContent>
       </Tabs>
     </section>
+  );
+}
+
+// ============================================================================
+// Error Boundary
+// ============================================================================
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <Card className="max-w-md bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
+        <CardHeader>
+          <CardTitle className="font-display text-xl text-stone-800">
+            Something went wrong
+          </CardTitle>
+          <CardDescription className="font-body text-stone-500">
+            {isRouteErrorResponse(error)
+              ? `${error.status}: ${error.statusText}`
+              : error instanceof Error
+                ? error.message
+                : "An unexpected error occurred"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-3">
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-amber-400 hover:bg-amber-500 text-stone-800 font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26]"
+          >
+            Try Again
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="border-2 border-stone-800 rounded-xl"
+          >
+            Go Home
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

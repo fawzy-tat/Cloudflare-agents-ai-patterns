@@ -19,6 +19,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["ResearchAgent", "SupportAgent"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["WorkflowAgent"]
     }
   ],
   "durable_objects": {
@@ -30,9 +34,20 @@
       {
         "name": "SupportAgent",
         "class_name": "SupportAgent"
+      },
+      {
+        "name": "WorkflowAgent",
+        "class_name": "WorkflowAgent"
       }
     ]
   },
+  "workflows": [
+    {
+      "name": "greating-workflow",
+      "binding": "GREATING_WORKFLOW",
+      "class_name": "GreatingWorkflow"
+    }
+  ],
   "observability": {
     "enabled": true
   },
