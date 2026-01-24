@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, isRouteErrorResponse } from "react-router";
 import type { Route } from "./+types/home";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -21,6 +21,7 @@ import {
   MousePointer2,
   Rocket,
   Cloud,
+  Database,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -284,7 +285,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* streamObject Card */}
             <FeatureCard
               icon={<Code className="w-6 h-6 text-charcoal" />}
@@ -304,6 +305,17 @@ export default function Home() {
               description="Render dynamic React components from LLM tool calls — weather cards, stock tickers, and more."
               buttonText="Explore Generative UI"
               onClick={() => navigate("/generative-ui")}
+              accentColor="crimson"
+            />
+
+            {/* TanStack Query Card */}
+            <FeatureCard
+              icon={<Database className="w-6 h-6 text-charcoal" />}
+              title="TanStack Query"
+              badge="Data Fetching"
+              description="Powerful data synchronization with caching, optimistic updates, and WebSocket integration."
+              buttonText="Explore TanStack Query"
+              onClick={() => navigate("/tanstack-demo")}
               accentColor="crimson"
             />
           </div>
@@ -633,6 +645,51 @@ function FeatureCard({
           {buttonText}
           <ArrowRight className="ml-auto w-4 h-4" />
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ERROR BOUNDARY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="max-w-md bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26] p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-rose-500 border-2 border-stone-800 rounded-xl flex items-center justify-center shadow-[2px_2px_0_#2D2A26]">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="font-display text-2xl text-stone-800">
+            Something went wrong
+          </h1>
+        </div>
+        <p className="font-body text-stone-500">
+          {isRouteErrorResponse(error)
+            ? `${error.status}: ${error.statusText}`
+            : error instanceof Error
+              ? error.message
+              : "An unexpected error occurred"}
+        </p>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-amber-400 hover:bg-amber-500 text-stone-800 font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26]"
+          >
+            Try Again
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="border-2 border-stone-800 rounded-xl"
+          >
+            Go Home
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { openai } from "@ai-sdk/openai";
 // AGENTS IMPORT
 import { SupportAgent } from "./agents/SupportAgent";
 import { ResearchAgent } from "./agents/ResearchAgent";
+import { WorkflowAgent, GreatingWorkflow } from "./agents/WorkflowAgent";
 
 // TOOLS IMPORT
 import { generativeUITools } from "./tools";
@@ -36,6 +37,154 @@ const app = new Hono<{ Bindings: Env }>();
 // API ROUTES
 app.get("/api/health", (c) => {
 	return c.json({ status: "ok" });
+});
+
+// ============================================================================
+// TanStack Query Demo Endpoints
+//
+// These endpoints demonstrate TanStack Query features like caching,
+// mutations, and query invalidation. They use simple in-memory storage
+// for demo purposes.
+// ============================================================================
+
+// In-memory storage for demo (resets on worker restart)
+const demoItems: Map<string, { id: string; text: string; status: string; createdAt: string }> = new Map();
+
+/**
+ * Demo: Health check with timestamp
+ * Shows basic useQuery with simple JSON response
+ */
+app.get("/api/tanstack-demo/health", async (c) => {
+	// Artificial delay to demonstrate loading states
+	await new Promise((r) => setTimeout(r, 500));
+	return c.json({
+		status: "healthy",
+		timestamp: new Date().toISOString(),
+		uptime: Math.floor(Math.random() * 10000) + 1000,
+		region: "us-east-1",
+	});
+});
+
+/**
+ * Demo: Stats endpoint with parameters
+ * Shows useQuery with dynamic parameters and caching
+ */
+app.get("/api/tanstack-demo/stats/:type", async (c) => {
+	const type = c.req.param("type");
+	// Artificial delay to show loading and caching behavior
+	await new Promise((r) => setTimeout(r, 800));
+
+	const stats: Record<string, object> = {
+		users: {
+			total: Math.floor(Math.random() * 1000) + 500,
+			active: Math.floor(Math.random() * 500) + 200,
+			new: Math.floor(Math.random() * 50) + 10,
+			fetchedAt: new Date().toISOString(),
+		},
+		requests: {
+			total: Math.floor(Math.random() * 100000) + 50000,
+			today: Math.floor(Math.random() * 5000) + 1000,
+			avgLatency: Math.floor(Math.random() * 100) + 20,
+			fetchedAt: new Date().toISOString(),
+		},
+		agents: {
+			total: 3,
+			active: Math.floor(Math.random() * 3) + 1,
+			conversations: Math.floor(Math.random() * 100) + 20,
+			fetchedAt: new Date().toISOString(),
+		},
+	};
+
+	if (!stats[type]) {
+		return c.json({ error: "Unknown stat type" }, 404);
+	}
+
+	return c.json({ type, ...stats[type] });
+});
+
+/**
+ * Demo: Get all items
+ * Shows useQuery for list data
+ */
+app.get("/api/tanstack-demo/items", async (c) => {
+	// Artificial delay
+	await new Promise((r) => setTimeout(r, 400));
+	return c.json({
+		items: Array.from(demoItems.values()).sort(
+			(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+		),
+		total: demoItems.size,
+	});
+});
+
+/**
+ * Demo: Create item
+ * Shows useMutation with optimistic updates
+ */
+app.post("/api/tanstack-demo/items", async (c) => {
+	const { text } = await c.req.json<{ text: string }>();
+
+	if (!text?.trim()) {
+		return c.json({ error: "Text is required" }, 400);
+	}
+
+	// Artificial delay to show mutation in progress
+	await new Promise((r) => setTimeout(r, 600));
+
+	// 10% chance of failure for demo purposes
+	if (Math.random() < 0.1) {
+		return c.json({ error: "Random failure for demo purposes" }, 500);
+	}
+
+	const id = `item-${Date.now()}`;
+	const newItem = {
+		id,
+		text: text.trim(),
+		status: "pending",
+		createdAt: new Date().toISOString(),
+	};
+
+	demoItems.set(id, newItem);
+	return c.json(newItem, 201);
+});
+
+/**
+ * Demo: Update item status
+ * Shows useMutation for updates
+ */
+app.patch("/api/tanstack-demo/items/:id", async (c) => {
+	const id = c.req.param("id");
+	const { status } = await c.req.json<{ status: string }>();
+
+	// Artificial delay
+	await new Promise((r) => setTimeout(r, 400));
+
+	const item = demoItems.get(id);
+	if (!item) {
+		return c.json({ error: "Item not found" }, 404);
+	}
+
+	item.status = status;
+	demoItems.set(id, item);
+	return c.json(item);
+});
+
+/**
+ * Demo: Delete item
+ * Shows useMutation for deletes with optimistic removal
+ */
+app.delete("/api/tanstack-demo/items/:id", async (c) => {
+	const id = c.req.param("id");
+
+	// Artificial delay
+	await new Promise((r) => setTimeout(r, 300));
+
+	if (!demoItems.has(id)) {
+		return c.json({ error: "Item not found" }, 404);
+	}
+
+	demoItems.delete(id);
+	return c.json({ success: true, id });
 });
 
 // ============================================================================
@@ -276,8 +425,8 @@ app.post("/api/research/initiate", async (c) => {
 });
 
 
-// AGENTS
-export { SupportAgent, ResearchAgent };
+// AGENTS & WORKFLOWS
+export { SupportAgent, ResearchAgent, WorkflowAgent, GreatingWorkflow };
 // WORKER HANDLER
 app.get("*", (c) => {
 	const requestHandler = createRequestHandler(

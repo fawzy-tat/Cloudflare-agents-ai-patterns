@@ -15,6 +15,7 @@ This document provides a comprehensive technical deep-dive into building AI agen
 7. [API Routes with Hono](#api-routes-with-hono)
 8. [🔌 WebSocket Patterns](#-websocket-patterns)
    - [Pattern 1: WebSocket Streaming](#pattern-1-websocket-streaming)
+   - [WebSocket + TanStack Query Integration](#websocket--tanstack-query-integration)
 9. [🌐 HTTP Patterns](#-http-patterns)
    - [Pattern 2: Zero-Config HTTP](#pattern-2-zero-config-http)
    - [Pattern 3: HTTP with Middleware](#pattern-3-http-with-middleware)
@@ -166,6 +167,7 @@ cf-hono-rr7-agents/
     "ai": "^5.0.102",
     "@ai-sdk/openai": "^2.0.73",
     "@ai-sdk/react": "^1.2.12",
+    "@tanstack/react-query": "^5.x",
     "hono": "4.8.2",
     "react-router": "7.6.3",
     "zod": "^4.1.13"
@@ -173,6 +175,7 @@ cf-hono-rr7-agents/
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.15.2",
     "@cloudflare/workers-types": "^4.20251114.0",
+    "@tanstack/react-query-devtools": "^5.x",
     "wrangler": "4.50.0"
   }
 }
@@ -875,6 +878,73 @@ async onMessage(connection: Connection, message: string) {
          │  7. {type:"complete"}                                 │
          │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│
 ```
+
+### WebSocket + TanStack Query Integration
+
+Combine WebSocket agents with TanStack Query for cache invalidation when agents push updates. This hybrid pattern provides the best of both worlds: real-time push events AND intelligent caching.
+
+```typescript
+// app/routes/realtime-dashboard.tsx
+
+import { useState } from "react";
+import { useAgent } from "agents/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+function RealtimeDashboard() {
+  const [sessionId] = useState(() => Math.random().toString(36).substring(2, 8));
+  const queryClient = useQueryClient();
+
+  // WebSocket connection for real-time events
+  const connection = useAgent({
+    agent: "support-agent",
+    name: sessionId,
+    onMessage: (message) => {
+      const event = JSON.parse(message.data);
+
+      // Invalidate queries when agent pushes data updates
+      if (event.type === "data-updated") {
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      }
+      if (event.type === "ticket-resolved") {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      }
+    },
+  });
+
+  // Cached query with stale-while-revalidate
+  const { data, isFetching } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
+      const res = await fetch("/api/dashboard");
+      return res.json();
+    },
+    staleTime: 30 * 1000, // Fresh for 30 seconds
+  });
+
+  return (
+    <div>
+      {isFetching && <span>Refreshing...</span>}
+      <Dashboard data={data} connected={connection?.readyState === 1} />
+    </div>
+  );
+}
+```
+
+**Benefits of this hybrid pattern:**
+
+| Feature | WebSocket Only | TanStack Query Only | Combined |
+|---------|---------------|---------------------|----------|
+| Real-time push updates | ✅ | ❌ | ✅ |
+| Automatic caching | ❌ | ✅ | ✅ |
+| Request deduplication | ❌ | ✅ | ✅ |
+| Offline support | ❌ | ✅ (cached data) | ✅ |
+| Selective invalidation | ❌ | ✅ | ✅ |
+
+**Use cases:**
+- Live dashboards with cached historical data
+- Chat applications with message history caching
+- Collaborative editing with instant updates
+- Real-time notifications that trigger data refreshes
 
 ---
 

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, isRouteErrorResponse } from "react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import type { Route } from "./+types/generative-user-interface";
 import type { WeatherOutput, StockOutput, EventOutput } from "~/schemas";
 import {
   Card,
@@ -33,7 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 
-export function meta() {
+export function meta({}: Route.MetaArgs) {
   return [
     { title: "Vercel AI SDK: Generative User Interfaces Demo" },
     {
@@ -43,6 +44,14 @@ export function meta() {
     },
   ];
 }
+
+// Suggested prompts moved outside component for performance
+const SUGGESTED_PROMPTS = [
+  "What's the weather like in Tokyo?",
+  "Show me the stock price for AAPL",
+  "Schedule a meeting tomorrow at 2pm called 'Team Sync'",
+  "What's the weather in Paris and the price of GOOGL?",
+] as const;
 
 // ============================================================================
 // Main Component
@@ -149,7 +158,7 @@ function GenerativeUIChatDemo() {
   const [inputValue, setInputValue] = useState("");
 
   // AI SDK 5.x: useChat with DefaultChatTransport for custom API endpoint
-  const { messages, sendMessage, status, error, setMessages } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/generative-ui/chat",
     }),
@@ -184,12 +193,7 @@ function GenerativeUIChatDemo() {
     await sendMessage({ text: messageText });
   };
 
-  const suggestedPrompts = [
-    "What's the weather like in Tokyo?",
-    "Show me the stock price for AAPL",
-    "Schedule a meeting tomorrow at 2pm called 'Team Sync'",
-    "What's the weather in Paris and the price of GOOGL?",
-  ];
+  const suggestedPrompts = SUGGESTED_PROMPTS;
 
   return (
     <section className="space-y-6">
@@ -674,5 +678,47 @@ function HowItWorksSection() {
         ))}
       </div>
     </section>
+  );
+}
+
+// ============================================================================
+// Error Boundary
+// ============================================================================
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <Card className="max-w-md bg-white border-2 border-stone-800 rounded-2xl shadow-[4px_4px_0_#2D2A26]">
+        <CardHeader>
+          <CardTitle className="font-display text-xl text-stone-800">
+            Something went wrong
+          </CardTitle>
+          <CardDescription className="font-body text-stone-500">
+            {isRouteErrorResponse(error)
+              ? `${error.status}: ${error.statusText}`
+              : error instanceof Error
+                ? error.message
+                : "An unexpected error occurred"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex gap-3">
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-rose-500 hover:bg-rose-600 text-white font-body font-semibold border-2 border-stone-800 rounded-xl shadow-[3px_3px_0_#2D2A26]"
+          >
+            Try Again
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/")}
+            className="border-2 border-stone-800 rounded-xl"
+          >
+            Go Home
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
